@@ -1,13 +1,12 @@
 services:
   fsignal:
     build: .
-    container_name: fsignal-server
     ports:
-      - "8080:8080"
+      - "3000:3000"
       - "5000:5000"
     environment:
       - FSIGNAL_TCP_PORT=5000
-      - SERVER_PORT=8080
+      - SERVER_PORT=3000
     restart: unless-stopped
     logging:
       driver: "json-file"
