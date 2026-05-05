@@ -3,11 +3,11 @@ package com.fareltek.fsignal.api;
 import com.fareltek.fsignal.tcp.TcpConnectionHandler;
 import com.fareltek.fsignal.tcp.TcpDataEvent;
 import org.springframework.http.MediaType;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -30,11 +30,10 @@ public class MonitorController {
     }
 
     @GetMapping(value = "/api/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<TcpDataEvent>> stream() {
-        return handler.getDataStream()
-                .map(event -> ServerSentEvent.<TcpDataEvent>builder()
-                        .event("tcp-data")
-                        .data(event)
-                        .build());
+    public Flux<TcpDataEvent> stream() {
+        Flux<TcpDataEvent> heartbeat = Flux.interval(Duration.ofSeconds(15))
+                .map(i -> TcpDataEvent.heartbeat());
+
+        return Flux.merge(handler.getDataStream(), heartbeat);
     }
 }

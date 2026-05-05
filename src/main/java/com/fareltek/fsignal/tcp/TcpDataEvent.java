@@ -26,6 +26,10 @@ public record TcpDataEvent(
         );
     }
 
+    public static TcpDataEvent heartbeat() {
+        return new TcpDataEvent(LocalDateTime.now().format(FMT), "", 0, "", "");
+    }
+
     private static String toAscii(byte[] data) {
         StringBuilder sb = new StringBuilder();
         for (byte b : data) {

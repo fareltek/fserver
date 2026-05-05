@@ -309,10 +309,10 @@
   function connect() {
     const es = new EventSource('/api/stream');
 
-    es.addEventListener('tcp-data', (e) => {
+    es.onmessage = (e) => {
       const ev = JSON.parse(e.data);
-      addEvent(ev);
-    });
+      if (ev.byteCount > 0) addEvent(ev);
+    };
 
     es.onopen = () => {
       dot.className = 'status-dot connected';
