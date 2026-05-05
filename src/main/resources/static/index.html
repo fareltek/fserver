@@ -841,6 +841,13 @@
     }
   }
 
+  // ─── AUTO-REFRESH SECTIONS ───────────────────────────────────────────
+  setInterval(() => {
+    if (document.getElementById('view-sections').classList.contains('active')) {
+      loadSections();
+    }
+  }, 5000);
+
   // ─── INIT ────────────────────────────────────────────────────────────
   connect();
 </script>

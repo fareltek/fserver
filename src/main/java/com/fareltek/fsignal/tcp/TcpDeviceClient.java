@@ -1,18 +1,23 @@
 package com.fareltek.fsignal.tcp;
 
 import com.fareltek.fsignal.section.Section;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.netty.tcp.TcpClient;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TcpDeviceClient {
 
     private static final Logger log = LoggerFactory.getLogger(TcpDeviceClient.class);
     private static final int RECONNECT_SECONDS = 5;
+    // If no data received for this many seconds, assume connection is dead (cable unplug etc.)
+    private static final int READ_TIMEOUT_SECONDS = 30;
 
     private final Section section;
     private final TcpConnectionHandler handler;
@@ -45,7 +50,10 @@ public class TcpDeviceClient {
         TcpClient.create()
                 .host(section.getHost())
                 .port(section.getPort())
+                .option(ChannelOption.SO_KEEPALIVE, true)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 .doOnConnected(conn -> {
+                    conn.addHandlerLast(new ReadTimeoutHandler(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS));
                     connected.set(true);
                     handler.onConnected(section);
                 })
@@ -65,7 +73,7 @@ public class TcpDeviceClient {
                         null,
                         error -> {
                             if (running.get()) {
-                                log.error("[TCP][{}] Hata: {}", section.getName(), error.getMessage());
+                                log.warn("[TCP][{}] Baglanti hatasi: {}", section.getName(), error.getMessage());
                                 Mono.delay(Duration.ofSeconds(RECONNECT_SECONDS)).subscribe(x -> connect());
                             }
                         },
