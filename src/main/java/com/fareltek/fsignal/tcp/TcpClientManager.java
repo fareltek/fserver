@@ -1,87 +1,54 @@
 package com.fareltek.fsignal.tcp;
 
+import com.fareltek.fsignal.section.Section;
+import com.fareltek.fsignal.section.SectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
-import reactor.netty.tcp.TcpClient;
 
-import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class TcpClientManager {
 
     private static final Logger log = LoggerFactory.getLogger(TcpClientManager.class);
 
-    @Value("${fsignal.waveshare.host:192.168.55.50}")
-    private String host;
-
-    @Value("${fsignal.waveshare.port:4001}")
-    private int port;
-
-    @Value("${fsignal.waveshare.reconnect-seconds:5}")
-    private int reconnectSeconds;
-
+    private final SectionService sectionService;
     private final TcpConnectionHandler handler;
+    private final Map<Integer, TcpDeviceClient> clients = new ConcurrentHashMap<>();
 
-    public TcpClientManager(TcpConnectionHandler handler) {
+    public TcpClientManager(SectionService sectionService, TcpConnectionHandler handler) {
+        this.sectionService = sectionService;
         this.handler = handler;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void start() {
-        log.info("========================================");
-        log.info("  FSignal TCP Client (SIL-2)");
-        log.info("  Hedef: {}:{}", host, port);
-        log.info("  Yeniden baglanti: {}s", reconnectSeconds);
-        log.info("========================================");
-        connect();
-    }
-
-    private void connect() {
-        connectOnce()
+        log.info("[TCP] Section baglantilari yukleniyor...");
+        sectionService.getAllEnabled()
                 .subscribe(
-                        null,
-                        error -> {
-                            log.error("[TCP] Baglanti hatasi: {} — {}s sonra yeniden denenecek",
-                                    error.getMessage(), reconnectSeconds);
-                            scheduleReconnect();
-                        },
-                        () -> {
-                            log.warn("[TCP] Baglanti kapandi — {}s sonra yeniden denenecek", reconnectSeconds);
-                            scheduleReconnect();
-                        }
+                        this::startClient,
+                        e -> log.error("[TCP] Section yukleme hatasi: {}", e.getMessage()),
+                        () -> log.info("[TCP] {} section baglantisi baslatildi", clients.size())
                 );
     }
 
-    private void scheduleReconnect() {
-        Mono.delay(Duration.ofSeconds(reconnectSeconds))
-                .subscribe(x -> connect());
+    public void startClient(Section s) {
+        TcpDeviceClient client = new TcpDeviceClient(s, handler);
+        clients.put(s.getId(), client);
+        client.start();
     }
 
-    private Mono<Void> connectOnce() {
-        return TcpClient.create()
-                .host(host)
-                .port(port)
-                .doOnConnected(conn -> {
-                    String addr = host + ":" + port;
-                    log.info("[TCP] Waveshare baglantisi kuruldu: {}", addr);
-                    handler.onConnected(addr);
-                })
-                .doOnDisconnected(conn -> {
-                    log.warn("[TCP] Waveshare baglantisi kesildi: {}:{}", host, port);
-                    handler.onDisconnected();
-                })
-                .handle((inbound, outbound) ->
-                        inbound.receive()
-                                .asByteArray()
-                                .doOnNext(handler::onData)
-                                .then()
-                )
-                .connect()
-                .then();
+    public void stopClient(int sectionId) {
+        TcpDeviceClient client = clients.remove(sectionId);
+        if (client != null) client.stop();
+    }
+
+    public Map<Integer, TcpDeviceClient> getClients() {
+        return Collections.unmodifiableMap(clients);
     }
 }

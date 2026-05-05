@@ -33,11 +33,7 @@ public class MonitorController {
         return Map.of(
                 "status", "UP",
                 "service", "FSignal Server",
-                "timestamp", LocalDateTime.now().toString(),
-                "waveshare", Map.of(
-                        "connected", handler.isConnected(),
-                        "addr", handler.getCurrentAddr()
-                )
+                "timestamp", LocalDateTime.now().toString()
         );
     }
 
@@ -54,11 +50,6 @@ public class MonitorController {
     @GetMapping("/api/events")
     public Flux<Object> getEvents() {
         return safetyEventService.getLast100().cast(Object.class);
-    }
-
-    @GetMapping("/api/events/unacknowledged")
-    public Flux<Object> getUnacknowledged() {
-        return safetyEventService.getUnacknowledged().cast(Object.class);
     }
 
     @PostMapping("/api/events/{id}/acknowledge")

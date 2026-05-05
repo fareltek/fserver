@@ -1,14 +1,12 @@
 package com.fareltek.fsignal.tcp;
 
 import com.fareltek.fsignal.db.SafetyEventService;
+import com.fareltek.fsignal.section.Section;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Component
 public class TcpConnectionHandler {
@@ -16,56 +14,37 @@ public class TcpConnectionHandler {
     private static final Logger log = LoggerFactory.getLogger(TcpConnectionHandler.class);
 
     private final SafetyEventService safetyEventService;
-    private final Sinks.Many<TcpDataEvent> dataSink = Sinks.many().replay().limit(50);
-
-    private final AtomicBoolean connected = new AtomicBoolean(false);
-    private final AtomicReference<String> currentAddr = new AtomicReference<>("—");
+    private final Sinks.Many<TcpDataEvent> dataSink = Sinks.many().replay().limit(100);
 
     public TcpConnectionHandler(SafetyEventService safetyEventService) {
         this.safetyEventService = safetyEventService;
     }
 
-    public void onConnected(String addr) {
-        connected.set(true);
-        currentAddr.set(addr);
-        TcpDataEvent event = TcpDataEvent.connectionEvent(addr, "CONNECTED");
-        dataSink.tryEmitNext(event);
+    public void onConnected(Section s) {
+        log.info("[TCP][{}] Baglandi: {}", s.getName(), s.sourceAddr());
+        emit(TcpDataEvent.connectionEvent(s.getId(), s.getName(), s.sourceAddr(), "CONNECTED"));
     }
 
-    public void onDisconnected() {
-        connected.set(false);
-        String addr = currentAddr.get();
-        currentAddr.set("—");
-        TcpDataEvent event = TcpDataEvent.connectionEvent(addr, "DISCONNECTED");
-        dataSink.tryEmitNext(event);
+    public void onDisconnected(Section s) {
+        log.warn("[TCP][{}] Baglanti kesildi: {}", s.getName(), s.sourceAddr());
+        emit(TcpDataEvent.connectionEvent(s.getId(), s.getName(), s.sourceAddr(), "DISCONNECTED"));
     }
 
-    public void onData(byte[] data) {
-        String addr = currentAddr.get();
-        TcpDataEvent event = TcpDataEvent.from(addr, data);
-        log.info("[TCP-DATA] {} | {} bytes | {}", addr, event.byteCount(), event.hex());
+    public void onData(Section s, byte[] data) {
+        TcpDataEvent event = TcpDataEvent.fromData(s.getId(), s.getName(), s.sourceAddr(), data);
+        log.info("[TCP-DATA][{}] {} bytes | {}", s.getName(), event.byteCount(), event.hex());
+        emit(event);
 
-        Sinks.EmitResult result = dataSink.tryEmitNext(event);
-        if (result.isFailure()) {
-            log.warn("[TCP-DATA] Sink emit failed: {}", result);
-        }
-
-        safetyEventService.save(addr, data, event.hex())
-                .subscribe(
-                        saved -> {},
-                        error -> log.error("[DB] Kayit hatasi: {}", error.getMessage())
-                );
-    }
-
-    public boolean isConnected() {
-        return connected.get();
-    }
-
-    public String getCurrentAddr() {
-        return currentAddr.get();
+        safetyEventService.save(s.sourceAddr(), data, event.hex())
+                .subscribe(null, e -> log.error("[DB] Kayit hatasi: {}", e.getMessage()));
     }
 
     public Flux<TcpDataEvent> getDataStream() {
         return dataSink.asFlux();
+    }
+
+    private void emit(TcpDataEvent event) {
+        Sinks.EmitResult result = dataSink.tryEmitNext(event);
+        if (result.isFailure()) log.warn("[SSE] Emit failed: {}", result);
     }
 }

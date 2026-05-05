@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FSignal — Event Viewer</title>
+<title>FSignal — Admin Panel</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -50,11 +50,39 @@
   }
   .status-dot.connected { background: #3fb950; box-shadow: 0 0 6px #3fb95088; }
   .status-dot.error     { background: #f85149; }
+  .status-dot.warning   { background: #d29922; }
 
   #status-label {
     font-size: 11px;
     color: #7d8590;
   }
+
+  /* TABS */
+  .tabs {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 0 20px;
+    display: flex;
+    gap: 0;
+    flex-shrink: 0;
+  }
+
+  .tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #7d8590;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+
+  .tab:hover { color: #e6edf3; }
+  .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
+  /* VIEWS */
+  .view { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  .view.active { display: flex; }
 
   /* STATS BAR */
   .stats {
@@ -66,11 +94,7 @@
     flex-shrink: 0;
   }
 
-  .stat {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
 
   .stat-label {
     color: #7d8590;
@@ -85,8 +109,8 @@
     font-weight: 600;
   }
 
-  .stat-value.green { color: #3fb950; }
-  .stat-value.blue  { color: #58a6ff; }
+  .stat-value.green  { color: #3fb950; }
+  .stat-value.blue   { color: #58a6ff; }
   .stat-value.orange { color: #d29922; }
 
   /* TOOLBAR */
@@ -113,20 +137,13 @@
   }
 
   .btn:hover { background: #2d333b; border-color: #8b949e; }
-
-  .btn.active {
-    background: #1f6feb;
-    border-color: #388bfd;
-    color: #fff;
-  }
-
+  .btn.active { background: #1f6feb; border-color: #388bfd; color: #fff; }
   .btn.danger:hover { background: #b62324; border-color: #f85149; }
+  .btn.primary { background: #1f6feb; border-color: #388bfd; color: #fff; }
+  .btn.primary:hover { background: #388bfd; }
+  .btn.sm { padding: 3px 10px; font-size: 11px; }
 
-  .toolbar-sep {
-    width: 1px;
-    height: 20px;
-    background: #30363d;
-  }
+  .toolbar-sep { width: 1px; height: 20px; background: #30363d; }
 
   #filter-input {
     background: #0d1117;
@@ -200,11 +217,11 @@
     vertical-align: middle;
   }
 
-  .col-time    { color: #7d8590; white-space: nowrap; }
-  .col-src     { color: #d2a8ff; white-space: nowrap; }
-  .col-bytes   { color: #d29922; text-align: right; font-weight: 600; white-space: nowrap; }
-  .col-hex     { color: #3fb950; font-size: 12px; word-break: break-all; }
-  .col-ascii   { color: #7d8590; font-size: 12px; word-break: break-all; }
+  .col-time  { color: #7d8590; white-space: nowrap; }
+  .col-src   { color: #d2a8ff; white-space: nowrap; }
+  .col-bytes { color: #d29922; text-align: right; font-weight: 600; white-space: nowrap; }
+  .col-hex   { color: #3fb950; font-size: 12px; word-break: break-all; }
+  .col-ascii { color: #7d8590; font-size: 12px; word-break: break-all; }
 
   /* EMPTY STATE */
   .empty-state {
@@ -218,7 +235,7 @@
     padding: 40px;
   }
 
-  .empty-state .icon { font-size: 32px; }
+  .empty-state .icon  { font-size: 32px; }
   .empty-state .title { font-size: 14px; color: #8d96a0; }
   .empty-state .hint  { font-size: 12px; }
 
@@ -227,6 +244,189 @@
   .log-container::-webkit-scrollbar-track { background: #0d1117; }
   .log-container::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
   .log-container::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+
+  /* ── SECTIONS PANEL ── */
+  .sections-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .sections-toolbar {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .sections-toolbar-title {
+    font-size: 12px;
+    color: #7d8590;
+    margin-right: auto;
+  }
+
+  .sections-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .sections-body::-webkit-scrollbar { width: 6px; }
+  .sections-body::-webkit-scrollbar-track { background: #0d1117; }
+  .sections-body::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+
+  /* SECTION CARDS */
+  .section-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.15s;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .section-card:hover { border-color: #8b949e; }
+  .section-card.connected-card { border-left: 3px solid #3fb950; }
+  .section-card.disconnected-card { border-left: 3px solid #30363d; }
+  .section-card.disabled-card { border-left: 3px solid #3d444d; opacity: 0.6; }
+
+  .section-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .section-dot.on  { background: #3fb950; box-shadow: 0 0 6px #3fb95066; }
+  .section-dot.off { background: #3d444d; }
+
+  .section-info { flex: 1; min-width: 0; }
+
+  .section-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e6edf3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .section-addr {
+    font-size: 11px;
+    color: #58a6ff;
+    margin-top: 2px;
+  }
+
+  .section-desc {
+    font-size: 11px;
+    color: #7d8590;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .section-status-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge-connected    { background: #1a3a1e; color: #3fb950; border: 1px solid #2ea04326; }
+  .badge-disconnected { background: #21262d; color: #7d8590; border: 1px solid #30363d; }
+  .badge-disabled     { background: #21262d; color: #3d444d; border: 1px solid #30363d; }
+
+  .section-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* FORM PANEL */
+  .form-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 18px 20px;
+    display: none;
+  }
+
+  .form-panel.open { display: block; }
+
+  .form-panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e6edf3;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #30363d;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  .form-label {
+    font-size: 11px;
+    color: #7d8590;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .form-input, .form-select {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #e6edf3;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-input:focus, .form-select:focus { border-color: #388bfd; }
+  .form-input::placeholder { color: #3d444d; }
+
+  .form-select option { background: #161b22; }
+
+  .form-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .form-error {
+    font-size: 11px;
+    color: #f85149;
+    margin-top: 6px;
+    display: none;
+  }
+
+  .sections-empty {
+    text-align: center;
+    padding: 40px;
+    color: #7d8590;
+    font-size: 12px;
+  }
 </style>
 </head>
 <body>
@@ -234,67 +434,144 @@
 <header>
   <div class="status-dot" id="dot"></div>
   <div>
-    <h1>FSIGNAL — EVENT VIEWER</h1>
-    <div class="subtitle">Tramway Signalization Monitor</div>
+    <h1>FSIGNAL — ADMIN PANEL</h1>
+    <div class="subtitle">Tramway Signalization Monitor · EN50129</div>
   </div>
   <span id="status-label">Bağlanıyor...</span>
 </header>
 
-<div class="stats">
-  <div class="stat">
-    <span class="stat-label">Toplam Paket</span>
-    <span class="stat-value green" id="stat-packets">0</span>
-  </div>
-  <div class="stat">
-    <span class="stat-label">Toplam Byte</span>
-    <span class="stat-value blue" id="stat-bytes">0</span>
-  </div>
-  <div class="stat">
-    <span class="stat-label">Kaynak IP</span>
-    <span class="stat-value orange" id="stat-sources">—</span>
-  </div>
-  <div class="stat">
-    <span class="stat-label">Son Paket</span>
-    <span class="stat-value" id="stat-last">—</span>
-  </div>
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" id="tab-monitor" onclick="switchTab('monitor')">📡 Canlı İzleme</div>
+  <div class="tab" id="tab-sections" onclick="switchTab('sections')">⚙️ Section Yönetimi</div>
 </div>
 
-<div class="toolbar">
-  <button class="btn active" id="btn-autoscroll" onclick="toggleAutoScroll()">↓ Oto Kaydır</button>
-  <div class="toolbar-sep"></div>
-  <input id="filter-input" type="text" placeholder="Hex filtrele... (örn: 01 03)" oninput="applyFilter()">
-  <div class="toolbar-sep"></div>
-  <button class="btn danger" onclick="clearLog()">Temizle</button>
-  <div class="toolbar-right">
-    <span id="visible-count">0 kayıt</span>
-  </div>
-</div>
+<!-- ═══════════════════════════════════ MONITOR VIEW ═══════════════════════════════════ -->
+<div class="view active" id="view-monitor">
 
-<div class="log-container" id="log-container">
-  <div class="empty-state" id="empty-state">
-    <div class="icon">📡</div>
-    <div class="title">Veri bekleniyor...</div>
-    <div class="hint">TCP port 5000'de Waveshare RS485/ETH bağlantısı bekleniyor</div>
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-label">Toplam Paket</span>
+      <span class="stat-value green" id="stat-packets">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Toplam Byte</span>
+      <span class="stat-value blue" id="stat-bytes">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Aktif Section</span>
+      <span class="stat-value orange" id="stat-sources">—</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Son Paket</span>
+      <span class="stat-value" id="stat-last">—</span>
+    </div>
   </div>
-  <table id="event-table" style="display:none;">
-    <thead>
-      <tr>
-        <th style="width:100px;">Zaman</th>
-        <th style="width:160px;">Kaynak</th>
-        <th style="width:60px;">Byte</th>
-        <th>Hex</th>
-        <th style="width:120px;">ASCII</th>
-      </tr>
-    </thead>
-    <tbody id="event-tbody"></tbody>
-  </table>
-</div>
+
+  <div class="toolbar">
+    <button class="btn active" id="btn-autoscroll" onclick="toggleAutoScroll()">↓ Oto Kaydır</button>
+    <div class="toolbar-sep"></div>
+    <input id="filter-input" type="text" placeholder="Hex filtrele... (örn: 01 03)" oninput="applyFilter()">
+    <div class="toolbar-sep"></div>
+    <button class="btn danger" onclick="clearLog()">Temizle</button>
+    <div class="toolbar-right">
+      <span id="visible-count">0 kayıt</span>
+    </div>
+  </div>
+
+  <div class="log-container" id="log-container">
+    <div class="empty-state" id="empty-state">
+      <div class="icon">📡</div>
+      <div class="title">Veri bekleniyor...</div>
+      <div class="hint">Section'lardan TCP verisi geldiğinde burada görünecek</div>
+    </div>
+    <table id="event-table" style="display:none;">
+      <thead>
+        <tr>
+          <th style="width:90px;">Zaman</th>
+          <th style="width:80px;">Section</th>
+          <th style="width:150px;">Adres</th>
+          <th style="width:55px;">Byte</th>
+          <th>Hex</th>
+          <th style="width:120px;">ASCII</th>
+        </tr>
+      </thead>
+      <tbody id="event-tbody"></tbody>
+    </table>
+  </div>
+
+</div><!-- /view-monitor -->
+
+<!-- ═══════════════════════════════════ SECTIONS VIEW ═══════════════════════════════════ -->
+<div class="view" id="view-sections">
+
+  <div class="sections-toolbar">
+    <span class="sections-toolbar-title" id="sections-summary">Yükleniyor...</span>
+    <button class="btn primary" onclick="openAddForm()">+ Yeni Section</button>
+    <button class="btn" onclick="loadSections()">↻ Yenile</button>
+  </div>
+
+  <div class="sections-body" id="sections-body">
+
+    <!-- ADD / EDIT FORM -->
+    <div class="form-panel" id="section-form">
+      <div class="form-panel-title" id="form-title">Yeni Section Ekle</div>
+      <input type="hidden" id="form-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Section Adı *</label>
+          <input class="form-input" id="form-name" type="text" placeholder="örn: BÖLÜM-1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Durum</label>
+          <select class="form-select" id="form-enabled">
+            <option value="true">Aktif</option>
+            <option value="false">Pasif</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Host (IP Adresi) *</label>
+          <input class="form-input" id="form-host" type="text" placeholder="örn: 192.168.1.100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Port</label>
+          <input class="form-input" id="form-port" type="number" placeholder="4001" min="1" max="65535">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Açıklama</label>
+          <input class="form-input" id="form-desc" type="text" placeholder="opsiyonel">
+        </div>
+      </div>
+      <div class="form-error" id="form-error"></div>
+      <div class="form-actions">
+        <button class="btn" onclick="closeForm()">İptal</button>
+        <button class="btn primary" onclick="submitForm()">Kaydet</button>
+      </div>
+    </div>
+
+    <!-- SECTION LIST -->
+    <div id="section-list">
+      <div class="sections-empty">Yükleniyor...</div>
+    </div>
+
+  </div>
+</div><!-- /view-sections -->
 
 <script>
+  // ─── TAB SWITCHING ───────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    document.getElementById('view-' + name).classList.add('active');
+    if (name === 'sections') loadSections();
+  }
+
+  // ─── SSE / MONITOR ───────────────────────────────────────────────────
   let autoScroll = true;
   let totalPackets = 0;
   let totalBytes = 0;
-  const sources = new Set();
+  const activeSections = new Set();
   let allRows = [];
   let filterText = '';
 
@@ -311,15 +588,16 @@
 
     es.onmessage = (e) => {
       const ev = JSON.parse(e.data);
-      if (ev.type === 'DATA') addEvent(ev);
-      else if (ev.type === 'CONNECTED') {
-        document.getElementById('stat-sources').textContent = ev.remoteAddr;
+      if (ev.type === 'DATA') {
+        addEvent(ev);
+      } else if (ev.type === 'CONNECTED' || ev.type === 'DISCONNECTED') {
+        refreshSectionDots();
       }
     };
 
     es.onopen = () => {
       dot.className = 'status-dot connected';
-      statusLabel.textContent = 'Bağlı';
+      statusLabel.textContent = 'SSE Bağlı';
     };
 
     es.onerror = () => {
@@ -333,11 +611,11 @@
   function addEvent(ev) {
     totalPackets++;
     totalBytes += ev.byteCount;
-    sources.add(ev.remoteAddr.replace('/',''));
+    activeSections.add(ev.sectionName || ev.sectionId);
 
     document.getElementById('stat-packets').textContent = totalPackets.toLocaleString();
     document.getElementById('stat-bytes').textContent = totalBytes.toLocaleString();
-    document.getElementById('stat-sources').textContent = [...sources].join(', ');
+    document.getElementById('stat-sources').textContent = activeSections.size;
     document.getElementById('stat-last').textContent = ev.timestamp;
 
     emptyState.style.display = 'none';
@@ -350,42 +628,38 @@
     tr.dataset.hex = ev.hex;
     tr.innerHTML = `
       <td class="col-time">${ev.timestamp}</td>
-      <td class="col-src">${ev.remoteAddr.replace('/','')}</td>
+      <td class="col-src" style="color:#d2a8ff">${escHtml(ev.sectionName || '')}</td>
+      <td class="col-src">${escHtml((ev.remoteAddr || '').replace('/',''))}</td>
       <td class="col-bytes">${ev.byteCount}</td>
-      <td class="col-hex">${ev.hex}</td>
+      <td class="col-hex">${escHtml(ev.hex)}</td>
       <td class="col-ascii">${escHtml(ev.ascii)}</td>
     `;
 
-    if (filterText && !ev.hex.includes(filterText) && !ev.remoteAddr.includes(filterText)) {
+    if (filterText && !ev.hex.toLowerCase().includes(filterText)) {
       tr.style.display = 'none';
       rowData.visible = false;
     }
 
     tbody.appendChild(tr);
-
     updateCount();
 
-    if (autoScroll) {
-      logContainer.scrollTop = logContainer.scrollHeight;
-    }
+    if (autoScroll) logContainer.scrollTop = logContainer.scrollHeight;
   }
 
   function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   function toggleAutoScroll() {
     autoScroll = !autoScroll;
-    const btn = document.getElementById('btn-autoscroll');
-    btn.classList.toggle('active', autoScroll);
+    document.getElementById('btn-autoscroll').classList.toggle('active', autoScroll);
   }
 
   function clearLog() {
     tbody.innerHTML = '';
     allRows = [];
-    totalPackets = 0;
-    totalBytes = 0;
-    sources.clear();
+    totalPackets = 0; totalBytes = 0;
+    activeSections.clear();
     document.getElementById('stat-packets').textContent = '0';
     document.getElementById('stat-bytes').textContent = '0';
     document.getElementById('stat-sources').textContent = '—';
@@ -397,11 +671,9 @@
 
   function applyFilter() {
     filterText = document.getElementById('filter-input').value.toLowerCase().trim();
-    const rows = tbody.querySelectorAll('tr');
-    rows.forEach(tr => {
-      const hex = tr.dataset.hex || '';
-      const match = !filterText || hex.toLowerCase().includes(filterText);
-      tr.style.display = match ? '' : 'none';
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const hex = (tr.dataset.hex || '').toLowerCase();
+      tr.style.display = (!filterText || hex.includes(filterText)) ? '' : 'none';
     });
     updateCount();
   }
@@ -409,11 +681,167 @@
   function updateCount() {
     const total = tbody.querySelectorAll('tr').length;
     const visible = tbody.querySelectorAll('tr:not([style*="display: none"])').length;
-    visibleCount.textContent = filterText
-      ? `${visible} / ${total} kayıt`
-      : `${total} kayıt`;
+    visibleCount.textContent = filterText ? `${visible} / ${total} kayıt` : `${total} kayıt`;
   }
 
+  // ─── SECTIONS CRUD ───────────────────────────────────────────────────
+  let sections = [];
+  let editingId = null;
+
+  async function loadSections() {
+    try {
+      const res = await fetch('/api/sections');
+      sections = await res.json();
+      renderSections();
+    } catch (e) {
+      document.getElementById('section-list').innerHTML =
+        '<div class="sections-empty" style="color:#f85149">Yüklenemedi: ' + e.message + '</div>';
+    }
+  }
+
+  function renderSections() {
+    const list = document.getElementById('section-list');
+    const total = sections.length;
+    const connected = sections.filter(s => s.connected).length;
+    const enabled = sections.filter(s => s.enabled).length;
+    document.getElementById('sections-summary').textContent =
+      `${total} section · ${enabled} aktif · ${connected} bağlı`;
+
+    if (total === 0) {
+      list.innerHTML = '<div class="sections-empty">Henüz section eklenmedi. "+ Yeni Section" butonuna tıklayın.</div>';
+      return;
+    }
+
+    list.innerHTML = sections.map(s => {
+      let cardClass = 'section-card';
+      let dotClass  = 'section-dot off';
+      let badge     = `<span class="section-status-badge badge-disabled">Pasif</span>`;
+
+      if (!s.enabled) {
+        cardClass += ' disabled-card';
+      } else if (s.connected) {
+        cardClass += ' connected-card';
+        dotClass   = 'section-dot on';
+        badge      = `<span class="section-status-badge badge-connected">● Bağlı</span>`;
+      } else {
+        cardClass += ' disconnected-card';
+        badge      = `<span class="section-status-badge badge-disconnected">○ Bağlantı Yok</span>`;
+      }
+
+      const desc = s.description ? `<div class="section-desc">${escHtml(s.description)}</div>` : '';
+
+      return `
+        <div class="${cardClass}" id="card-${s.id}">
+          <div class="${dotClass}"></div>
+          <div class="section-info">
+            <div class="section-name">${escHtml(s.name)}</div>
+            <div class="section-addr">${escHtml(s.host)}:${s.port}</div>
+            ${desc}
+          </div>
+          ${badge}
+          <div class="section-actions">
+            <button class="btn sm" onclick="openEditForm(${s.id})">Düzenle</button>
+            <button class="btn sm danger" onclick="deleteSection(${s.id}, '${escHtml(s.name)}')">Sil</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function openAddForm() {
+    editingId = null;
+    document.getElementById('form-title').textContent = 'Yeni Section Ekle';
+    document.getElementById('form-id').value = '';
+    document.getElementById('form-name').value = '';
+    document.getElementById('form-host').value = '';
+    document.getElementById('form-port').value = '4001';
+    document.getElementById('form-desc').value = '';
+    document.getElementById('form-enabled').value = 'true';
+    document.getElementById('form-error').style.display = 'none';
+    document.getElementById('section-form').classList.add('open');
+    document.getElementById('form-name').focus();
+  }
+
+  function openEditForm(id) {
+    const s = sections.find(x => x.id === id);
+    if (!s) return;
+    editingId = id;
+    document.getElementById('form-title').textContent = 'Section Düzenle — ' + s.name;
+    document.getElementById('form-id').value = id;
+    document.getElementById('form-name').value = s.name;
+    document.getElementById('form-host').value = s.host;
+    document.getElementById('form-port').value = s.port;
+    document.getElementById('form-desc').value = s.description || '';
+    document.getElementById('form-enabled').value = String(s.enabled);
+    document.getElementById('form-error').style.display = 'none';
+    document.getElementById('section-form').classList.add('open');
+    document.getElementById('section-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function closeForm() {
+    document.getElementById('section-form').classList.remove('open');
+    editingId = null;
+  }
+
+  async function submitForm() {
+    const name    = document.getElementById('form-name').value.trim();
+    const host    = document.getElementById('form-host').value.trim();
+    const port    = parseInt(document.getElementById('form-port').value) || 4001;
+    const desc    = document.getElementById('form-desc').value.trim();
+    const enabled = document.getElementById('form-enabled').value === 'true';
+    const errEl   = document.getElementById('form-error');
+
+    if (!name) { showFormError('Section adı zorunludur.'); return; }
+    if (!host)  { showFormError('Host IP adresi zorunludur.'); return; }
+    if (port < 1 || port > 65535) { showFormError('Port 1–65535 arasında olmalıdır.'); return; }
+
+    const body = { name, host, port, description: desc || null, enabled };
+
+    try {
+      const url    = editingId ? `/api/sections/${editingId}` : '/api/sections';
+      const method = editingId ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        showFormError('Sunucu hatası: ' + txt);
+        return;
+      }
+
+      closeForm();
+      await loadSections();
+    } catch (e) {
+      showFormError('İstek hatası: ' + e.message);
+    }
+  }
+
+  async function deleteSection(id, name) {
+    if (!confirm(`"${name}" section'ı silinsin mi?\nBu section'a ait TCP bağlantısı da kesilecek.`)) return;
+    try {
+      await fetch(`/api/sections/${id}`, { method: 'DELETE' });
+      await loadSections();
+    } catch (e) {
+      alert('Silinemedi: ' + e.message);
+    }
+  }
+
+  function showFormError(msg) {
+    const el = document.getElementById('form-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function refreshSectionDots() {
+    if (document.getElementById('view-sections').classList.contains('active')) {
+      loadSections();
+    }
+  }
+
+  // ─── INIT ────────────────────────────────────────────────────────────
   connect();
 </script>
 </body>
