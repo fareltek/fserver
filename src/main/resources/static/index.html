@@ -311,7 +311,10 @@
 
     es.onmessage = (e) => {
       const ev = JSON.parse(e.data);
-      if (ev.byteCount > 0) addEvent(ev);
+      if (ev.type === 'DATA') addEvent(ev);
+      else if (ev.type === 'CONNECTED') {
+        document.getElementById('stat-sources').textContent = ev.remoteAddr;
+      }
     };
 
     es.onopen = () => {

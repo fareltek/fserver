@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
 
 public record TcpDataEvent(
+        String type,
         String timestamp,
         String remoteAddr,
         int byteCount,
@@ -15,19 +16,22 @@ public record TcpDataEvent(
     private static final HexFormat HEX_FMT = HexFormat.ofDelimiter(" ").withUpperCase();
 
     public static TcpDataEvent from(String remoteAddr, byte[] data) {
-        String hex = HEX_FMT.formatHex(data);
-        String ascii = toAscii(data);
         return new TcpDataEvent(
+                "DATA",
                 LocalDateTime.now().format(FMT),
                 remoteAddr,
                 data.length,
-                hex,
-                ascii
+                HEX_FMT.formatHex(data),
+                toAscii(data)
         );
     }
 
+    public static TcpDataEvent connectionEvent(String addr, String type) {
+        return new TcpDataEvent(type, LocalDateTime.now().format(FMT), addr, 0, "", "");
+    }
+
     public static TcpDataEvent heartbeat() {
-        return new TcpDataEvent(LocalDateTime.now().format(FMT), "", 0, "", "");
+        return new TcpDataEvent("HEARTBEAT", LocalDateTime.now().format(FMT), "", 0, "", "");
     }
 
     private static String toAscii(byte[] data) {
