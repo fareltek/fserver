@@ -1,25 +1,19 @@
 server:
   port: ${SERVER_PORT:3000}
 
-fsignal:
-  waveshare:
-    host: ${WAVESHARE_HOST:192.168.55.50}
-    port: ${WAVESHARE_PORT:4001}
-    reconnect-seconds: ${WAVESHARE_RECONNECT:5}
-
 spring:
   r2dbc:
     url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:fsignal}
-    username: ${DB_USER:fsignal}
-    password: ${DB_PASS:fsignal}
+    username: ${DB_USER:fareltek}
+    password: ${DB_PASS:2580}
     pool:
       initial-size: 2
       max-size: 10
 
   flyway:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:fsignal}
-    user: ${DB_USER:fsignal}
-    password: ${DB_PASS:fsignal}
+    user: ${DB_USER:fareltek}
+    password: ${DB_PASS:2580}
     locations: classpath:db/migration
 
 logging:
