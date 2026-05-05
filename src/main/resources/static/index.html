@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FSignal — Event Viewer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #58a6ff;
+    letter-spacing: 1px;
+  }
+
+  header .subtitle {
+    color: #7d8590;
+    font-size: 11px;
+  }
+
+  .status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #3d444d;
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .status-dot.connected { background: #3fb950; box-shadow: 0 0 6px #3fb95088; }
+  .status-dot.error     { background: #f85149; }
+
+  #status-label {
+    font-size: 11px;
+    color: #7d8590;
+  }
+
+  /* STATS BAR */
+  .stats {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 8px 20px;
+    display: flex;
+    gap: 32px;
+    flex-shrink: 0;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-label {
+    color: #7d8590;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-value {
+    color: #e6edf3;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .stat-value.green { color: #3fb950; }
+  .stat-value.blue  { color: #58a6ff; }
+  .stat-value.orange { color: #d29922; }
+
+  /* TOOLBAR */
+  .toolbar {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 6px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #e6edf3;
+    padding: 4px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .btn:hover { background: #2d333b; border-color: #8b949e; }
+
+  .btn.active {
+    background: #1f6feb;
+    border-color: #388bfd;
+    color: #fff;
+  }
+
+  .btn.danger:hover { background: #b62324; border-color: #f85149; }
+
+  .toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: #30363d;
+  }
+
+  #filter-input {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #e6edf3;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    width: 200px;
+    outline: none;
+  }
+  #filter-input:focus { border-color: #388bfd; }
+  #filter-input::placeholder { color: #3d444d; }
+
+  .toolbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #7d8590;
+    font-size: 11px;
+  }
+
+  /* EVENT LOG */
+  .log-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #161b22;
+  }
+
+  thead th {
+    padding: 8px 12px;
+    text-align: left;
+    color: #7d8590;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #30363d;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid #1c2128;
+    transition: background 0.1s;
+    animation: fadeIn 0.2s ease;
+  }
+
+  tbody tr:hover { background: #1c2128; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  td {
+    padding: 7px 12px;
+    vertical-align: middle;
+  }
+
+  .col-time    { color: #7d8590; white-space: nowrap; }
+  .col-src     { color: #d2a8ff; white-space: nowrap; }
+  .col-bytes   { color: #d29922; text-align: right; font-weight: 600; white-space: nowrap; }
+  .col-hex     { color: #3fb950; font-size: 12px; word-break: break-all; }
+  .col-ascii   { color: #7d8590; font-size: 12px; word-break: break-all; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #7d8590;
+    gap: 8px;
+    padding: 40px;
+  }
+
+  .empty-state .icon { font-size: 32px; }
+  .empty-state .title { font-size: 14px; color: #8d96a0; }
+  .empty-state .hint  { font-size: 12px; }
+
+  /* SCROLLBAR */
+  .log-container::-webkit-scrollbar { width: 6px; }
+  .log-container::-webkit-scrollbar-track { background: #0d1117; }
+  .log-container::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+  .log-container::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="status-dot" id="dot"></div>
+  <div>
+    <h1>FSIGNAL — EVENT VIEWER</h1>
+    <div class="subtitle">Tramway Signalization Monitor</div>
+  </div>
+  <span id="status-label">Bağlanıyor...</span>
+</header>
+
+<div class="stats">
+  <div class="stat">
+    <span class="stat-label">Toplam Paket</span>
+    <span class="stat-value green" id="stat-packets">0</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Toplam Byte</span>
+    <span class="stat-value blue" id="stat-bytes">0</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Kaynak IP</span>
+    <span class="stat-value orange" id="stat-sources">—</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Son Paket</span>
+    <span class="stat-value" id="stat-last">—</span>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn active" id="btn-autoscroll" onclick="toggleAutoScroll()">↓ Oto Kaydır</button>
+  <div class="toolbar-sep"></div>
+  <input id="filter-input" type="text" placeholder="Hex filtrele... (örn: 01 03)" oninput="applyFilter()">
+  <div class="toolbar-sep"></div>
+  <button class="btn danger" onclick="clearLog()">Temizle</button>
+  <div class="toolbar-right">
+    <span id="visible-count">0 kayıt</span>
+  </div>
+</div>
+
+<div class="log-container" id="log-container">
+  <div class="empty-state" id="empty-state">
+    <div class="icon">📡</div>
+    <div class="title">Veri bekleniyor...</div>
+    <div class="hint">TCP port 5000'de Waveshare RS485/ETH bağlantısı bekleniyor</div>
+  </div>
+  <table id="event-table" style="display:none;">
+    <thead>
+      <tr>
+        <th style="width:100px;">Zaman</th>
+        <th style="width:160px;">Kaynak</th>
+        <th style="width:60px;">Byte</th>
+        <th>Hex</th>
+        <th style="width:120px;">ASCII</th>
+      </tr>
+    </thead>
+    <tbody id="event-tbody"></tbody>
+  </table>
+</div>
+
+<script>
+  let autoScroll = true;
+  let totalPackets = 0;
+  let totalBytes = 0;
+  const sources = new Set();
+  let allRows = [];
+  let filterText = '';
+
+  const dot = document.getElementById('dot');
+  const statusLabel = document.getElementById('status-label');
+  const tbody = document.getElementById('event-tbody');
+  const table = document.getElementById('event-table');
+  const emptyState = document.getElementById('empty-state');
+  const logContainer = document.getElementById('log-container');
+  const visibleCount = document.getElementById('visible-count');
+
+  function connect() {
+    const es = new EventSource('/api/stream');
+
+    es.addEventListener('tcp-data', (e) => {
+      const ev = JSON.parse(e.data);
+      addEvent(ev);
+    });
+
+    es.onopen = () => {
+      dot.className = 'status-dot connected';
+      statusLabel.textContent = 'Bağlı';
+    };
+
+    es.onerror = () => {
+      dot.className = 'status-dot error';
+      statusLabel.textContent = 'Bağlantı kesildi — yeniden bağlanıyor...';
+      es.close();
+      setTimeout(connect, 3000);
+    };
+  }
+
+  function addEvent(ev) {
+    totalPackets++;
+    totalBytes += ev.byteCount;
+    sources.add(ev.remoteAddr.replace('/',''));
+
+    document.getElementById('stat-packets').textContent = totalPackets.toLocaleString();
+    document.getElementById('stat-bytes').textContent = totalBytes.toLocaleString();
+    document.getElementById('stat-sources').textContent = [...sources].join(', ');
+    document.getElementById('stat-last').textContent = ev.timestamp;
+
+    emptyState.style.display = 'none';
+    table.style.display = 'table';
+
+    const rowData = { ev, visible: true };
+    allRows.push(rowData);
+
+    const tr = document.createElement('tr');
+    tr.dataset.hex = ev.hex;
+    tr.innerHTML = `
+      <td class="col-time">${ev.timestamp}</td>
+      <td class="col-src">${ev.remoteAddr.replace('/','')}</td>
+      <td class="col-bytes">${ev.byteCount}</td>
+      <td class="col-hex">${ev.hex}</td>
+      <td class="col-ascii">${escHtml(ev.ascii)}</td>
+    `;
+
+    if (filterText && !ev.hex.includes(filterText) && !ev.remoteAddr.includes(filterText)) {
+      tr.style.display = 'none';
+      rowData.visible = false;
+    }
+
+    tbody.appendChild(tr);
+
+    updateCount();
+
+    if (autoScroll) {
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function toggleAutoScroll() {
+    autoScroll = !autoScroll;
+    const btn = document.getElementById('btn-autoscroll');
+    btn.classList.toggle('active', autoScroll);
+  }
+
+  function clearLog() {
+    tbody.innerHTML = '';
+    allRows = [];
+    totalPackets = 0;
+    totalBytes = 0;
+    sources.clear();
+    document.getElementById('stat-packets').textContent = '0';
+    document.getElementById('stat-bytes').textContent = '0';
+    document.getElementById('stat-sources').textContent = '—';
+    document.getElementById('stat-last').textContent = '—';
+    emptyState.style.display = 'flex';
+    table.style.display = 'none';
+    updateCount();
+  }
+
+  function applyFilter() {
+    filterText = document.getElementById('filter-input').value.toLowerCase().trim();
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(tr => {
+      const hex = tr.dataset.hex || '';
+      const match = !filterText || hex.toLowerCase().includes(filterText);
+      tr.style.display = match ? '' : 'none';
+    });
+    updateCount();
+  }
+
+  function updateCount() {
+    const total = tbody.querySelectorAll('tr').length;
+    const visible = tbody.querySelectorAll('tr:not([style*="display: none"])').length;
+    visibleCount.textContent = filterText
+      ? `${visible} / ${total} kayıt`
+      : `${total} kayıt`;
+  }
+
+  connect();
+</script>
+</body>
+</html>
