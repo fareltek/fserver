@@ -21,41 +21,21 @@
   header {
     background: #161b22;
     border-bottom: 1px solid #30363d;
-    padding: 12px 20px;
+    padding: 10px 20px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     flex-shrink: 0;
   }
-
-  header h1 {
-    font-size: 15px;
-    font-weight: 600;
-    color: #58a6ff;
-    letter-spacing: 1px;
-  }
-
-  header .subtitle {
-    color: #7d8590;
-    font-size: 11px;
-  }
-
+  header h1 { font-size: 14px; font-weight: 600; color: #58a6ff; letter-spacing: 1px; }
+  header .subtitle { color: #7d8590; font-size: 10px; }
   .status-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: #3d444d;
-    flex-shrink: 0;
-    transition: background 0.3s;
+    width: 9px; height: 9px; border-radius: 50%; background: #3d444d;
+    flex-shrink: 0; transition: background 0.3s;
   }
   .status-dot.connected { background: #3fb950; box-shadow: 0 0 6px #3fb95088; }
   .status-dot.error     { background: #f85149; }
-  .status-dot.warning   { background: #d29922; }
-
-  #status-label {
-    font-size: 11px;
-    color: #7d8590;
-  }
+  #status-label { font-size: 11px; color: #7d8590; }
 
   /* TABS */
   .tabs {
@@ -63,12 +43,10 @@
     border-bottom: 1px solid #30363d;
     padding: 0 20px;
     display: flex;
-    gap: 0;
     flex-shrink: 0;
   }
-
   .tab {
-    padding: 10px 20px;
+    padding: 9px 18px;
     cursor: pointer;
     font-size: 12px;
     color: #7d8590;
@@ -76,7 +54,6 @@
     transition: color 0.15s, border-color 0.15s;
     user-select: none;
   }
-
   .tab:hover { color: #e6edf3; }
   .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
 
@@ -88,42 +65,29 @@
   .stats {
     background: #161b22;
     border-bottom: 1px solid #30363d;
-    padding: 8px 20px;
+    padding: 7px 20px;
     display: flex;
-    gap: 32px;
+    gap: 28px;
     flex-shrink: 0;
   }
-
-  .stat { display: flex; flex-direction: column; gap: 2px; }
-
-  .stat-label {
-    color: #7d8590;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .stat-value {
-    color: #e6edf3;
-    font-size: 18px;
-    font-weight: 600;
-  }
-
+  .stat { display: flex; flex-direction: column; gap: 1px; }
+  .stat-label { color: #7d8590; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { color: #e6edf3; font-size: 16px; font-weight: 600; }
   .stat-value.green  { color: #3fb950; }
   .stat-value.blue   { color: #58a6ff; }
   .stat-value.orange { color: #d29922; }
+  .stat-value.red    { color: #f85149; }
 
   /* TOOLBAR */
   .toolbar {
     background: #161b22;
     border-bottom: 1px solid #30363d;
-    padding: 6px 20px;
+    padding: 5px 20px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex-shrink: 0;
   }
-
   .btn {
     background: #21262d;
     border: 1px solid #30363d;
@@ -135,16 +99,13 @@
     font-size: 12px;
     transition: background 0.15s, border-color 0.15s;
   }
-
   .btn:hover { background: #2d333b; border-color: #8b949e; }
   .btn.active { background: #1f6feb; border-color: #388bfd; color: #fff; }
   .btn.danger:hover { background: #b62324; border-color: #f85149; }
   .btn.primary { background: #1f6feb; border-color: #388bfd; color: #fff; }
   .btn.primary:hover { background: #388bfd; }
-  .btn.sm { padding: 3px 10px; font-size: 11px; }
-
+  .btn.sm { padding: 3px 9px; font-size: 11px; }
   .toolbar-sep { width: 1px; height: 20px; background: #30363d; }
-
   #filter-input {
     background: #0d1117;
     border: 1px solid #30363d;
@@ -158,37 +119,18 @@
   }
   #filter-input:focus { border-color: #388bfd; }
   #filter-input::placeholder { color: #3d444d; }
+  .toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; color: #7d8590; font-size: 11px; }
 
-  .toolbar-right {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #7d8590;
-    font-size: 11px;
-  }
-
-  /* EVENT LOG */
-  .log-container {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #161b22;
-  }
-
+  /* EVENT TABLE */
+  .log-container { flex: 1; overflow-y: auto; padding: 0; }
+  .log-container::-webkit-scrollbar { width: 6px; }
+  .log-container::-webkit-scrollbar-track { background: #0d1117; }
+  .log-container::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+  .log-container::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { position: sticky; top: 0; z-index: 10; background: #161b22; }
   thead th {
-    padding: 8px 12px;
+    padding: 7px 10px;
     text-align: left;
     color: #7d8590;
     font-size: 10px;
@@ -198,150 +140,113 @@
     font-weight: 500;
     white-space: nowrap;
   }
-
   tbody tr {
     border-bottom: 1px solid #1c2128;
     transition: background 0.1s;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn 0.18s ease;
   }
-
   tbody tr:hover { background: #1c2128; }
 
+  /* Row type coloring */
+  tbody tr.row-warning  { border-left: 2px solid #d29922; }
+  tbody tr.row-alarm    { border-left: 2px solid #f85149; }
+  tbody tr.row-critical { border-left: 2px solid #ff6b6b; background: #1a0a0a; }
+  tbody tr.row-heartbeat td { opacity: 0.45; }
+
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
+    from { opacity: 0; transform: translateY(-3px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  td { padding: 6px 10px; vertical-align: middle; }
+  .col-time  { color: #7d8590; white-space: nowrap; font-size: 11px; }
+  .col-name  { color: #d2a8ff; white-space: nowrap; font-weight: 600; }
+  .col-addr  { color: #58a6ff; white-space: nowrap; font-size: 11px; }
+  .col-seq   { color: #7d8590; text-align: right; font-size: 11px; white-space: nowrap; }
+  .col-bytes { color: #d29922; text-align: right; font-weight: 600; white-space: nowrap; font-size: 11px; }
+  .col-hex   { color: #3fb950; font-size: 11px; word-break: break-all; max-width: 340px; }
+  .col-data  { color: #8d96a0; font-size: 11px; word-break: break-all; max-width: 160px; }
 
-  td {
-    padding: 7px 12px;
-    vertical-align: middle;
+  /* TYPE BADGES */
+  .type-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
   }
-
-  .col-time  { color: #7d8590; white-space: nowrap; }
-  .col-src   { color: #d2a8ff; white-space: nowrap; }
-  .col-bytes { color: #d29922; text-align: right; font-weight: 600; white-space: nowrap; }
-  .col-hex   { color: #3fb950; font-size: 12px; word-break: break-all; }
-  .col-ascii { color: #7d8590; font-size: 12px; word-break: break-all; }
+  .type-data      { background: #0d2041; color: #58a6ff; border: 1px solid #1f6feb44; }
+  .type-warning   { background: #2d200a; color: #d29922; border: 1px solid #d2992244; }
+  .type-alarm     { background: #2d0d0d; color: #f85149; border: 1px solid #f8514944; }
+  .type-critical  { background: #3d0909; color: #ff6b6b; border: 1px solid #ff000055; font-weight: 800; }
+  .type-heartbeat { background: #1c2128; color: #555d68; border: 1px solid #30363d; }
+  .type-raw       { background: #1c2128; color: #7d8590; border: 1px solid #30363d; }
 
   /* EMPTY STATE */
   .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: #7d8590;
-    gap: 8px;
-    padding: 40px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; color: #7d8590; gap: 8px; padding: 40px;
   }
-
   .empty-state .icon  { font-size: 32px; }
   .empty-state .title { font-size: 14px; color: #8d96a0; }
   .empty-state .hint  { font-size: 12px; }
 
-  /* SCROLLBAR */
-  .log-container::-webkit-scrollbar { width: 6px; }
-  .log-container::-webkit-scrollbar-track { background: #0d1117; }
-  .log-container::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-  .log-container::-webkit-scrollbar-thumb:hover { background: #8b949e; }
-
   /* ── SECTIONS PANEL ── */
-  .sections-view {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-
   .sections-toolbar {
     background: #161b22;
     border-bottom: 1px solid #30363d;
-    padding: 10px 20px;
+    padding: 9px 20px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-shrink: 0;
   }
-
-  .sections-toolbar-title {
-    font-size: 12px;
-    color: #7d8590;
-    margin-right: auto;
-  }
-
+  .sections-toolbar-title { font-size: 12px; color: #7d8590; margin-right: auto; }
   .sections-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
-
   .sections-body::-webkit-scrollbar { width: 6px; }
   .sections-body::-webkit-scrollbar-track { background: #0d1117; }
   .sections-body::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
 
-  /* SECTION CARDS */
+  /* SECTION CARDS — no animation on existing cards, only on new */
   .section-card {
     background: #161b22;
     border: 1px solid #30363d;
     border-radius: 8px;
-    padding: 14px 16px;
+    padding: 13px 16px;
     display: flex;
     align-items: center;
-    gap: 14px;
-    transition: border-color 0.15s;
-    animation: fadeIn 0.2s ease;
+    gap: 12px;
+    transition: border-color 0.2s, border-left-color 0.3s, opacity 0.3s;
   }
-
+  .section-card.is-new { animation: fadeIn 0.25s ease; }
   .section-card:hover { border-color: #8b949e; }
-  .section-card.connected-card { border-left: 3px solid #3fb950; }
+  .section-card.connected-card    { border-left: 3px solid #3fb950; }
   .section-card.disconnected-card { border-left: 3px solid #30363d; }
-  .section-card.disabled-card { border-left: 3px solid #3d444d; opacity: 0.6; }
+  .section-card.disabled-card     { border-left: 3px solid #3d444d; opacity: 0.55; }
 
   .section-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    transition: background 0.3s, box-shadow 0.3s;
   }
   .section-dot.on  { background: #3fb950; box-shadow: 0 0 6px #3fb95066; }
-  .section-dot.off { background: #3d444d; }
+  .section-dot.off { background: #3d444d; box-shadow: none; }
 
   .section-info { flex: 1; min-width: 0; }
-
-  .section-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #e6edf3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .section-addr {
-    font-size: 11px;
-    color: #58a6ff;
-    margin-top: 2px;
-  }
-
-  .section-desc {
-    font-size: 11px;
-    color: #7d8590;
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  .section-name { font-size: 13px; font-weight: 600; color: #e6edf3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .section-addr { font-size: 11px; color: #58a6ff; margin-top: 2px; }
+  .section-desc { font-size: 11px; color: #7d8590; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .section-status-badge {
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 12px;
-    white-space: nowrap;
-    flex-shrink: 0;
+    font-size: 10px; padding: 2px 8px; border-radius: 12px;
+    white-space: nowrap; flex-shrink: 0; transition: background 0.3s, color 0.3s;
   }
   .badge-connected    { background: #1a3a1e; color: #3fb950; border: 1px solid #2ea04326; }
   .badge-disconnected { background: #21262d; color: #7d8590; border: 1px solid #30363d; }
@@ -349,84 +254,29 @@
 
   .section-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
-  /* FORM PANEL */
+  /* ADD/EDIT FORM */
   .form-panel {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 8px;
-    padding: 18px 20px;
-    display: none;
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 16px 20px; display: none;
   }
-
   .form-panel.open { display: block; }
-
-  .form-panel-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #e6edf3;
-    margin-bottom: 14px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #30363d;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
+  .form-panel-title { font-size: 13px; font-weight: 600; color: #e6edf3; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #30363d; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
   .form-group.full { grid-column: 1 / -1; }
-
-  .form-label {
-    font-size: 11px;
-    color: #7d8590;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-  }
-
+  .form-label { font-size: 10px; color: #7d8590; text-transform: uppercase; letter-spacing: 0.4px; }
   .form-input, .form-select {
-    background: #0d1117;
-    border: 1px solid #30363d;
-    color: #e6edf3;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-family: inherit;
-    font-size: 12px;
-    outline: none;
-    transition: border-color 0.15s;
+    background: #0d1117; border: 1px solid #30363d; color: #e6edf3;
+    padding: 6px 10px; border-radius: 6px; font-family: inherit; font-size: 12px;
+    outline: none; transition: border-color 0.15s;
   }
-
   .form-input:focus, .form-select:focus { border-color: #388bfd; }
   .form-input::placeholder { color: #3d444d; }
-
   .form-select option { background: #161b22; }
-
-  .form-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-  }
-
-  .form-error {
-    font-size: 11px;
-    color: #f85149;
-    margin-top: 6px;
-    display: none;
-  }
-
-  .sections-empty {
-    text-align: center;
-    padding: 40px;
-    color: #7d8590;
-    font-size: 12px;
-  }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .form-error { font-size: 11px; color: #f85149; margin-top: 6px; display: none; }
+  .sections-empty { text-align: center; padding: 40px; color: #7d8590; font-size: 12px; }
+  #section-list { display: flex; flex-direction: column; gap: 10px; }
 </style>
 </head>
 <body>
@@ -440,43 +290,41 @@
   <span id="status-label">Bağlanıyor...</span>
 </header>
 
-<!-- TABS -->
 <div class="tabs">
   <div class="tab active" id="tab-monitor" onclick="switchTab('monitor')">📡 Canlı İzleme</div>
   <div class="tab" id="tab-sections" onclick="switchTab('sections')">⚙️ Section Yönetimi</div>
 </div>
 
-<!-- ═══════════════════════════════════ MONITOR VIEW ═══════════════════════════════════ -->
+<!-- ══════════════════════════ MONITOR ══════════════════════════ -->
 <div class="view active" id="view-monitor">
 
   <div class="stats">
-    <div class="stat">
-      <span class="stat-label">Toplam Paket</span>
-      <span class="stat-value green" id="stat-packets">0</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Toplam Byte</span>
-      <span class="stat-value blue" id="stat-bytes">0</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Aktif Section</span>
-      <span class="stat-value orange" id="stat-sources">—</span>
-    </div>
-    <div class="stat">
-      <span class="stat-label">Son Paket</span>
-      <span class="stat-value" id="stat-last">—</span>
-    </div>
+    <div class="stat"><span class="stat-label">Toplam Paket</span><span class="stat-value green" id="stat-packets">0</span></div>
+    <div class="stat"><span class="stat-label">Toplam Byte</span><span class="stat-value blue" id="stat-bytes">0</span></div>
+    <div class="stat"><span class="stat-label">Aktif Section</span><span class="stat-value orange" id="stat-sources">—</span></div>
+    <div class="stat"><span class="stat-label">Alarm</span><span class="stat-value red" id="stat-alarms">0</span></div>
+    <div class="stat"><span class="stat-label">Warning</span><span class="stat-value orange" id="stat-warnings">0</span></div>
+    <div class="stat"><span class="stat-label">Son Paket</span><span class="stat-value" id="stat-last">—</span></div>
   </div>
 
   <div class="toolbar">
     <button class="btn active" id="btn-autoscroll" onclick="toggleAutoScroll()">↓ Oto Kaydır</button>
     <div class="toolbar-sep"></div>
-    <input id="filter-input" type="text" placeholder="Hex filtrele... (örn: 01 03)" oninput="applyFilter()">
+    <label style="color:#7d8590;font-size:11px;">Tip:</label>
+    <select id="type-filter" onchange="applyFilter()" style="background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:3px 8px;border-radius:6px;font-family:inherit;font-size:11px;outline:none;">
+      <option value="">Tümü</option>
+      <option value="DATA">DATA</option>
+      <option value="WARNING">WARNING</option>
+      <option value="ALARM">ALARM</option>
+      <option value="CRITICAL">CRITICAL</option>
+      <option value="HEARTBEAT">HEARTBEAT</option>
+      <option value="RAW">RAW</option>
+    </select>
+    <div class="toolbar-sep"></div>
+    <input id="filter-input" type="text" placeholder="Hex / Section filtrele..." oninput="applyFilter()">
     <div class="toolbar-sep"></div>
     <button class="btn danger" onclick="clearLog()">Temizle</button>
-    <div class="toolbar-right">
-      <span id="visible-count">0 kayıt</span>
-    </div>
+    <div class="toolbar-right"><span id="visible-count">0 kayıt</span></div>
   </div>
 
   <div class="log-container" id="log-container">
@@ -488,21 +336,23 @@
     <table id="event-table" style="display:none;">
       <thead>
         <tr>
-          <th style="width:90px;">Zaman</th>
-          <th style="width:80px;">Section</th>
-          <th style="width:150px;">Adres</th>
-          <th style="width:55px;">Byte</th>
+          <th style="width:80px;">Zaman</th>
+          <th style="width:90px;">Section</th>
+          <th style="width:130px;">Adres</th>
+          <th style="width:85px;">Tip</th>
+          <th style="width:50px;">Seq</th>
+          <th style="width:42px;">Byte</th>
           <th>Hex</th>
-          <th style="width:120px;">ASCII</th>
+          <th style="width:140px;">Veri</th>
         </tr>
       </thead>
       <tbody id="event-tbody"></tbody>
     </table>
   </div>
 
-</div><!-- /view-monitor -->
+</div>
 
-<!-- ═══════════════════════════════════ SECTIONS VIEW ═══════════════════════════════════ -->
+<!-- ══════════════════════════ SECTIONS ══════════════════════════ -->
 <div class="view" id="view-sections">
 
   <div class="sections-toolbar">
@@ -513,7 +363,6 @@
 
   <div class="sections-body" id="sections-body">
 
-    <!-- ADD / EDIT FORM -->
     <div class="form-panel" id="section-form">
       <div class="form-panel-title" id="form-title">Yeni Section Ekle</div>
       <input type="hidden" id="form-id">
@@ -549,307 +398,352 @@
       </div>
     </div>
 
-    <!-- SECTION LIST -->
-    <div id="section-list">
-      <div class="sections-empty">Yükleniyor...</div>
-    </div>
+    <div id="section-list"></div>
 
   </div>
-</div><!-- /view-sections -->
+</div>
 
 <script>
-  // ─── TAB SWITCHING ───────────────────────────────────────────────────
-  function switchTab(name) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('tab-' + name).classList.add('active');
-    document.getElementById('view-' + name).classList.add('active');
-    if (name === 'sections') loadSections();
+// ── TAB ───────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('view-' + name).classList.add('active');
+  if (name === 'sections') loadSections();
+}
+
+// ── PACKET PARSER (FA 51 protocol) ───────────────────────────────────────
+const TYPE_NAMES = { 0x01:'DATA', 0x02:'WARNING', 0x03:'ALARM', 0x04:'CRITICAL', 0x05:'HEARTBEAT' };
+const TYPE_CSS   = { DATA:'type-data', WARNING:'type-warning', ALARM:'type-alarm', CRITICAL:'type-critical', HEARTBEAT:'type-heartbeat' };
+const ROW_CSS    = { WARNING:'row-warning', ALARM:'row-alarm', CRITICAL:'row-critical', HEARTBEAT:'row-heartbeat' };
+
+function parsePacket(hexStr) {
+  const parts = hexStr.trim().split(' ');
+  if (parts.length < 11) return null;
+  const b = parts.map(h => parseInt(h, 16));
+  if (b[0] !== 0xFA || b[1] !== 0x51) return null;
+  const typeName  = TYPE_NAMES[b[2]] || 'UNKNOWN';
+  const sectionId = (b[3] << 8) | b[4];
+  const seq       = ((b[5] << 24) | (b[6] << 16) | (b[7] << 8) | b[8]) >>> 0;
+  const dataLen   = b[9];
+  const dataBytes = b.slice(10, 10 + dataLen);
+  const dataHex   = dataBytes.map(x => x.toString(16).toUpperCase().padStart(2,'0')).join(' ');
+  const dataAscii = dataBytes.map(x => (x >= 32 && x < 127) ? String.fromCharCode(x) : '.').join('');
+  return { typeName, sectionId, seq, dataLen, dataHex, dataAscii };
+}
+
+// ── MONITOR ───────────────────────────────────────────────────────────────
+let autoScroll    = true;
+let totalPackets  = 0;
+let totalBytes    = 0;
+let totalAlarms   = 0;
+let totalWarnings = 0;
+const activeSections = new Set();
+let filterText  = '';
+let filterType  = '';
+
+const dot          = document.getElementById('dot');
+const statusLabel  = document.getElementById('status-label');
+const tbody        = document.getElementById('event-tbody');
+const table        = document.getElementById('event-table');
+const emptyState   = document.getElementById('empty-state');
+const logContainer = document.getElementById('log-container');
+const visibleCount = document.getElementById('visible-count');
+
+function connect() {
+  const es = new EventSource('/api/stream');
+  es.onmessage = e => {
+    const ev = JSON.parse(e.data);
+    if (ev.type === 'DATA') addEvent(ev);
+    else if (ev.type === 'CONNECTED' || ev.type === 'DISCONNECTED') patchSectionCards();
+  };
+  es.onopen  = () => { dot.className = 'status-dot connected'; statusLabel.textContent = 'SSE Bağlı'; };
+  es.onerror = () => {
+    dot.className = 'status-dot error';
+    statusLabel.textContent = 'Bağlantı kesildi — yeniden bağlanıyor...';
+    es.close();
+    setTimeout(connect, 3000);
+  };
+}
+
+function addEvent(ev) {
+  totalPackets++;
+  totalBytes += ev.byteCount;
+  activeSections.add(ev.sectionName || ev.sectionId);
+
+  const pkt = parsePacket(ev.hex || '');
+  const typeName = pkt ? pkt.typeName : 'RAW';
+  const seq      = pkt ? pkt.seq     : '—';
+  const dataDisp = pkt ? (pkt.dataAscii || pkt.dataHex || '—') : (ev.ascii || '—');
+
+  if (typeName === 'ALARM' || typeName === 'CRITICAL') totalAlarms++;
+  if (typeName === 'WARNING') totalWarnings++;
+
+  document.getElementById('stat-packets').textContent  = totalPackets.toLocaleString();
+  document.getElementById('stat-bytes').textContent    = totalBytes.toLocaleString();
+  document.getElementById('stat-sources').textContent  = activeSections.size;
+  document.getElementById('stat-alarms').textContent   = totalAlarms;
+  document.getElementById('stat-warnings').textContent = totalWarnings;
+  document.getElementById('stat-last').textContent     = ev.timestamp;
+
+  emptyState.style.display = 'none';
+  table.style.display = 'table';
+
+  const badgeCss = TYPE_CSS[typeName] || 'type-raw';
+  const rowCss   = ROW_CSS[typeName] || '';
+
+  const tr = document.createElement('tr');
+  if (rowCss) tr.className = rowCss;
+  tr.dataset.hex     = (ev.hex || '').toLowerCase();
+  tr.dataset.section = (ev.sectionName || '').toLowerCase();
+  tr.dataset.type    = typeName;
+
+  tr.innerHTML = `
+    <td class="col-time">${ev.timestamp}</td>
+    <td class="col-name">${escHtml(ev.sectionName || '')}</td>
+    <td class="col-addr">${escHtml((ev.remoteAddr || '').replace('/',''))}</td>
+    <td><span class="type-badge ${badgeCss}">${typeName}</span></td>
+    <td class="col-seq">${seq}</td>
+    <td class="col-bytes">${ev.byteCount}</td>
+    <td class="col-hex">${escHtml(ev.hex || '')}</td>
+    <td class="col-data">${escHtml(dataDisp)}</td>
+  `;
+
+  const show = rowMatchesFilter(tr);
+  if (!show) tr.style.display = 'none';
+
+  tbody.appendChild(tr);
+  updateCount();
+  if (autoScroll) logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+function rowMatchesFilter(tr) {
+  if (filterType && tr.dataset.type !== filterType) return false;
+  if (filterText) {
+    const hex = tr.dataset.hex || '';
+    const sec = tr.dataset.section || '';
+    if (!hex.includes(filterText) && !sec.includes(filterText)) return false;
+  }
+  return true;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleAutoScroll() {
+  autoScroll = !autoScroll;
+  document.getElementById('btn-autoscroll').classList.toggle('active', autoScroll);
+}
+
+function clearLog() {
+  tbody.innerHTML = '';
+  totalPackets = totalBytes = totalAlarms = totalWarnings = 0;
+  activeSections.clear();
+  ['stat-packets','stat-bytes','stat-alarms','stat-warnings'].forEach(id =>
+    document.getElementById(id).textContent = '0');
+  document.getElementById('stat-sources').textContent = '—';
+  document.getElementById('stat-last').textContent = '—';
+  emptyState.style.display = 'flex';
+  table.style.display = 'none';
+  updateCount();
+}
+
+function applyFilter() {
+  filterText = document.getElementById('filter-input').value.toLowerCase().trim();
+  filterType = document.getElementById('type-filter').value;
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.style.display = rowMatchesFilter(tr) ? '' : 'none';
+  });
+  updateCount();
+}
+
+function updateCount() {
+  const total   = tbody.querySelectorAll('tr').length;
+  const visible = tbody.querySelectorAll('tr:not([style*="display: none"])').length;
+  visibleCount.textContent = (filterText || filterType)
+    ? `${visible} / ${total} kayıt` : `${total} kayıt`;
+}
+
+// ── SECTIONS CRUD ─────────────────────────────────────────────────────────
+let sections  = [];
+let editingId = null;
+
+async function loadSections() {
+  try {
+    const res = await fetch('/api/sections');
+    sections = await res.json();
+    smartRenderSections();
+  } catch (e) {
+    document.getElementById('section-list').innerHTML =
+      `<div class="sections-empty" style="color:#f85149">Yüklenemedi: ${e.message}</div>`;
+  }
+}
+
+// Smart render — only patches changed state, no full innerHTML wipe → no blink
+function smartRenderSections() {
+  const list    = document.getElementById('section-list');
+  const total   = sections.length;
+  const connected = sections.filter(s => s.connected).length;
+  const enabled   = sections.filter(s => s.enabled).length;
+  document.getElementById('sections-summary').textContent =
+    `${total} section · ${enabled} aktif · ${connected} bağlı`;
+
+  if (total === 0) {
+    list.innerHTML = '<div class="sections-empty">Henüz section eklenmedi. "+ Yeni Section" butonuna tıklayın.</div>';
+    return;
   }
 
-  // ─── SSE / MONITOR ───────────────────────────────────────────────────
-  let autoScroll = true;
-  let totalPackets = 0;
-  let totalBytes = 0;
-  const activeSections = new Set();
-  let allRows = [];
-  let filterText = '';
+  // Remove old empty-state if present
+  const emptyEl = list.querySelector('.sections-empty');
+  if (emptyEl) emptyEl.remove();
 
-  const dot = document.getElementById('dot');
-  const statusLabel = document.getElementById('status-label');
-  const tbody = document.getElementById('event-tbody');
-  const table = document.getElementById('event-table');
-  const emptyState = document.getElementById('empty-state');
-  const logContainer = document.getElementById('log-container');
-  const visibleCount = document.getElementById('visible-count');
+  // Track current card IDs in DOM
+  const domIds = new Set([...list.querySelectorAll('.section-card')].map(el => Number(el.dataset.sid)));
+  const newIds = new Set(sections.map(s => s.id));
 
-  function connect() {
-    const es = new EventSource('/api/stream');
-
-    es.onmessage = (e) => {
-      const ev = JSON.parse(e.data);
-      if (ev.type === 'DATA') {
-        addEvent(ev);
-      } else if (ev.type === 'CONNECTED' || ev.type === 'DISCONNECTED') {
-        refreshSectionDots();
-      }
-    };
-
-    es.onopen = () => {
-      dot.className = 'status-dot connected';
-      statusLabel.textContent = 'SSE Bağlı';
-    };
-
-    es.onerror = () => {
-      dot.className = 'status-dot error';
-      statusLabel.textContent = 'Bağlantı kesildi — yeniden bağlanıyor...';
-      es.close();
-      setTimeout(connect, 3000);
-    };
-  }
-
-  function addEvent(ev) {
-    totalPackets++;
-    totalBytes += ev.byteCount;
-    activeSections.add(ev.sectionName || ev.sectionId);
-
-    document.getElementById('stat-packets').textContent = totalPackets.toLocaleString();
-    document.getElementById('stat-bytes').textContent = totalBytes.toLocaleString();
-    document.getElementById('stat-sources').textContent = activeSections.size;
-    document.getElementById('stat-last').textContent = ev.timestamp;
-
-    emptyState.style.display = 'none';
-    table.style.display = 'table';
-
-    const rowData = { ev, visible: true };
-    allRows.push(rowData);
-
-    const tr = document.createElement('tr');
-    tr.dataset.hex = ev.hex;
-    tr.innerHTML = `
-      <td class="col-time">${ev.timestamp}</td>
-      <td class="col-src" style="color:#d2a8ff">${escHtml(ev.sectionName || '')}</td>
-      <td class="col-src">${escHtml((ev.remoteAddr || '').replace('/',''))}</td>
-      <td class="col-bytes">${ev.byteCount}</td>
-      <td class="col-hex">${escHtml(ev.hex)}</td>
-      <td class="col-ascii">${escHtml(ev.ascii)}</td>
-    `;
-
-    if (filterText && !ev.hex.toLowerCase().includes(filterText)) {
-      tr.style.display = 'none';
-      rowData.visible = false;
+  // Remove deleted
+  domIds.forEach(id => {
+    if (!newIds.has(id)) {
+      const el = document.getElementById('card-' + id);
+      if (el) el.remove();
     }
+  });
 
-    tbody.appendChild(tr);
-    updateCount();
+  // Update or insert
+  sections.forEach(s => {
+    const existing = document.getElementById('card-' + s.id);
+    if (existing) {
+      patchCard(existing, s);      // update only status — no re-render, no blink
+    } else {
+      const card = buildCard(s);
+      card.classList.add('is-new'); // animate only truly new cards
+      list.appendChild(card);
+    }
+  });
+}
 
-    if (autoScroll) logContainer.scrollTop = logContainer.scrollHeight;
-  }
+function cardState(s) {
+  if (!s.enabled) return { cls: 'disabled-card',     dot: 'off', badge: 'badge-disabled',     txt: 'Pasif' };
+  if (s.connected) return { cls: 'connected-card',   dot: 'on',  badge: 'badge-connected',    txt: '● Bağlı' };
+  return              { cls: 'disconnected-card',     dot: 'off', badge: 'badge-disconnected', txt: '○ Bağlantı Yok' };
+}
 
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
+function patchCard(el, s) {
+  const { cls, dot, badge, txt } = cardState(s);
+  // Update card border class without touching anything else
+  el.classList.remove('connected-card','disconnected-card','disabled-card');
+  el.classList.add(cls);
+  el.querySelector('.section-dot').className = 'section-dot ' + dot;
+  const b = el.querySelector('.section-status-badge');
+  b.className = 'section-status-badge ' + badge;
+  b.textContent = txt;
+}
 
-  function toggleAutoScroll() {
-    autoScroll = !autoScroll;
-    document.getElementById('btn-autoscroll').classList.toggle('active', autoScroll);
-  }
+function buildCard(s) {
+  const { cls, dot, badge, txt } = cardState(s);
+  const desc = s.description
+    ? `<div class="section-desc">${escHtml(s.description)}</div>` : '';
+  const div = document.createElement('div');
+  div.className = `section-card ${cls}`;
+  div.id = 'card-' + s.id;
+  div.dataset.sid = s.id;
+  div.innerHTML = `
+    <div class="section-dot ${dot}"></div>
+    <div class="section-info">
+      <div class="section-name">${escHtml(s.name)}</div>
+      <div class="section-addr">${escHtml(s.host)}:${s.port}</div>
+      ${desc}
+    </div>
+    <span class="section-status-badge ${badge}">${txt}</span>
+    <div class="section-actions">
+      <button class="btn sm" onclick="openEditForm(${s.id})">Düzenle</button>
+      <button class="btn sm danger" onclick="deleteSection(${s.id},'${escHtml(s.name)}')">Sil</button>
+    </div>
+  `;
+  return div;
+}
 
-  function clearLog() {
-    tbody.innerHTML = '';
-    allRows = [];
-    totalPackets = 0; totalBytes = 0;
-    activeSections.clear();
-    document.getElementById('stat-packets').textContent = '0';
-    document.getElementById('stat-bytes').textContent = '0';
-    document.getElementById('stat-sources').textContent = '—';
-    document.getElementById('stat-last').textContent = '—';
-    emptyState.style.display = 'flex';
-    table.style.display = 'none';
-    updateCount();
-  }
+// Called from SSE — only update status if sections tab is visible
+function patchSectionCards() {
+  if (!document.getElementById('view-sections').classList.contains('active')) return;
+  loadSections();
+}
 
-  function applyFilter() {
-    filterText = document.getElementById('filter-input').value.toLowerCase().trim();
-    tbody.querySelectorAll('tr').forEach(tr => {
-      const hex = (tr.dataset.hex || '').toLowerCase();
-      tr.style.display = (!filterText || hex.includes(filterText)) ? '' : 'none';
+// ── SECTION FORM ──────────────────────────────────────────────────────────
+function openAddForm() {
+  editingId = null;
+  document.getElementById('form-title').textContent = 'Yeni Section Ekle';
+  ['form-id','form-name','form-host','form-desc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('form-port').value = '4001';
+  document.getElementById('form-enabled').value = 'true';
+  document.getElementById('form-error').style.display = 'none';
+  document.getElementById('section-form').classList.add('open');
+  document.getElementById('form-name').focus();
+}
+
+function openEditForm(id) {
+  const s = sections.find(x => x.id === id);
+  if (!s) return;
+  editingId = id;
+  document.getElementById('form-title').textContent = 'Section Düzenle — ' + s.name;
+  document.getElementById('form-id').value   = id;
+  document.getElementById('form-name').value = s.name;
+  document.getElementById('form-host').value = s.host;
+  document.getElementById('form-port').value = s.port;
+  document.getElementById('form-desc').value = s.description || '';
+  document.getElementById('form-enabled').value = String(s.enabled);
+  document.getElementById('form-error').style.display = 'none';
+  document.getElementById('section-form').classList.add('open');
+  document.getElementById('section-form').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function closeForm() {
+  document.getElementById('section-form').classList.remove('open');
+  editingId = null;
+}
+
+async function submitForm() {
+  const name    = document.getElementById('form-name').value.trim();
+  const host    = document.getElementById('form-host').value.trim();
+  const port    = parseInt(document.getElementById('form-port').value) || 4001;
+  const desc    = document.getElementById('form-desc').value.trim();
+  const enabled = document.getElementById('form-enabled').value === 'true';
+  if (!name) { showFormError('Section adı zorunludur.'); return; }
+  if (!host) { showFormError('Host IP adresi zorunludur.'); return; }
+  if (port < 1 || port > 65535) { showFormError('Port 1–65535 arasında olmalıdır.'); return; }
+  try {
+    const res = await fetch(editingId ? `/api/sections/${editingId}` : '/api/sections', {
+      method: editingId ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, host, port, description: desc || null, enabled })
     });
-    updateCount();
-  }
+    if (!res.ok) { showFormError('Sunucu hatası: ' + await res.text()); return; }
+    closeForm();
+    await loadSections();
+  } catch (e) { showFormError('İstek hatası: ' + e.message); }
+}
 
-  function updateCount() {
-    const total = tbody.querySelectorAll('tr').length;
-    const visible = tbody.querySelectorAll('tr:not([style*="display: none"])').length;
-    visibleCount.textContent = filterText ? `${visible} / ${total} kayıt` : `${total} kayıt`;
-  }
+async function deleteSection(id, name) {
+  if (!confirm(`"${name}" section'ı silinsin mi?`)) return;
+  await fetch(`/api/sections/${id}`, { method: 'DELETE' });
+  await loadSections();
+}
 
-  // ─── SECTIONS CRUD ───────────────────────────────────────────────────
-  let sections = [];
-  let editingId = null;
+function showFormError(msg) {
+  const el = document.getElementById('form-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
 
-  async function loadSections() {
-    try {
-      const res = await fetch('/api/sections');
-      sections = await res.json();
-      renderSections();
-    } catch (e) {
-      document.getElementById('section-list').innerHTML =
-        '<div class="sections-empty" style="color:#f85149">Yüklenemedi: ' + e.message + '</div>';
-    }
-  }
+// ── AUTO-REFRESH SECTIONS ────────────────────────────────────────────────
+setInterval(() => {
+  if (document.getElementById('view-sections').classList.contains('active')) loadSections();
+}, 5000);
 
-  function renderSections() {
-    const list = document.getElementById('section-list');
-    const total = sections.length;
-    const connected = sections.filter(s => s.connected).length;
-    const enabled = sections.filter(s => s.enabled).length;
-    document.getElementById('sections-summary').textContent =
-      `${total} section · ${enabled} aktif · ${connected} bağlı`;
-
-    if (total === 0) {
-      list.innerHTML = '<div class="sections-empty">Henüz section eklenmedi. "+ Yeni Section" butonuna tıklayın.</div>';
-      return;
-    }
-
-    list.innerHTML = sections.map(s => {
-      let cardClass = 'section-card';
-      let dotClass  = 'section-dot off';
-      let badge     = `<span class="section-status-badge badge-disabled">Pasif</span>`;
-
-      if (!s.enabled) {
-        cardClass += ' disabled-card';
-      } else if (s.connected) {
-        cardClass += ' connected-card';
-        dotClass   = 'section-dot on';
-        badge      = `<span class="section-status-badge badge-connected">● Bağlı</span>`;
-      } else {
-        cardClass += ' disconnected-card';
-        badge      = `<span class="section-status-badge badge-disconnected">○ Bağlantı Yok</span>`;
-      }
-
-      const desc = s.description ? `<div class="section-desc">${escHtml(s.description)}</div>` : '';
-
-      return `
-        <div class="${cardClass}" id="card-${s.id}">
-          <div class="${dotClass}"></div>
-          <div class="section-info">
-            <div class="section-name">${escHtml(s.name)}</div>
-            <div class="section-addr">${escHtml(s.host)}:${s.port}</div>
-            ${desc}
-          </div>
-          ${badge}
-          <div class="section-actions">
-            <button class="btn sm" onclick="openEditForm(${s.id})">Düzenle</button>
-            <button class="btn sm danger" onclick="deleteSection(${s.id}, '${escHtml(s.name)}')">Sil</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  function openAddForm() {
-    editingId = null;
-    document.getElementById('form-title').textContent = 'Yeni Section Ekle';
-    document.getElementById('form-id').value = '';
-    document.getElementById('form-name').value = '';
-    document.getElementById('form-host').value = '';
-    document.getElementById('form-port').value = '4001';
-    document.getElementById('form-desc').value = '';
-    document.getElementById('form-enabled').value = 'true';
-    document.getElementById('form-error').style.display = 'none';
-    document.getElementById('section-form').classList.add('open');
-    document.getElementById('form-name').focus();
-  }
-
-  function openEditForm(id) {
-    const s = sections.find(x => x.id === id);
-    if (!s) return;
-    editingId = id;
-    document.getElementById('form-title').textContent = 'Section Düzenle — ' + s.name;
-    document.getElementById('form-id').value = id;
-    document.getElementById('form-name').value = s.name;
-    document.getElementById('form-host').value = s.host;
-    document.getElementById('form-port').value = s.port;
-    document.getElementById('form-desc').value = s.description || '';
-    document.getElementById('form-enabled').value = String(s.enabled);
-    document.getElementById('form-error').style.display = 'none';
-    document.getElementById('section-form').classList.add('open');
-    document.getElementById('section-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function closeForm() {
-    document.getElementById('section-form').classList.remove('open');
-    editingId = null;
-  }
-
-  async function submitForm() {
-    const name    = document.getElementById('form-name').value.trim();
-    const host    = document.getElementById('form-host').value.trim();
-    const port    = parseInt(document.getElementById('form-port').value) || 4001;
-    const desc    = document.getElementById('form-desc').value.trim();
-    const enabled = document.getElementById('form-enabled').value === 'true';
-    const errEl   = document.getElementById('form-error');
-
-    if (!name) { showFormError('Section adı zorunludur.'); return; }
-    if (!host)  { showFormError('Host IP adresi zorunludur.'); return; }
-    if (port < 1 || port > 65535) { showFormError('Port 1–65535 arasında olmalıdır.'); return; }
-
-    const body = { name, host, port, description: desc || null, enabled };
-
-    try {
-      const url    = editingId ? `/api/sections/${editingId}` : '/api/sections';
-      const method = editingId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) {
-        const txt = await res.text();
-        showFormError('Sunucu hatası: ' + txt);
-        return;
-      }
-
-      closeForm();
-      await loadSections();
-    } catch (e) {
-      showFormError('İstek hatası: ' + e.message);
-    }
-  }
-
-  async function deleteSection(id, name) {
-    if (!confirm(`"${name}" section'ı silinsin mi?\nBu section'a ait TCP bağlantısı da kesilecek.`)) return;
-    try {
-      await fetch(`/api/sections/${id}`, { method: 'DELETE' });
-      await loadSections();
-    } catch (e) {
-      alert('Silinemedi: ' + e.message);
-    }
-  }
-
-  function showFormError(msg) {
-    const el = document.getElementById('form-error');
-    el.textContent = msg;
-    el.style.display = 'block';
-  }
-
-  function refreshSectionDots() {
-    if (document.getElementById('view-sections').classList.contains('active')) {
-      loadSections();
-    }
-  }
-
-  // ─── AUTO-REFRESH SECTIONS ───────────────────────────────────────────
-  setInterval(() => {
-    if (document.getElementById('view-sections').classList.contains('active')) {
-      loadSections();
-    }
-  }, 5000);
-
-  // ─── INIT ────────────────────────────────────────────────────────────
-  connect();
+// ── INIT ─────────────────────────────────────────────────────────────────
+connect();
 </script>
 </body>
 </html>
