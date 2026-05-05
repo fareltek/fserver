@@ -60,7 +60,7 @@ public class TcpDeviceClient {
                                 .then()
                 )
                 .connect()
-                .then()
+                .flatMap(conn -> conn.onDispose())
                 .subscribe(
                         null,
                         error -> {

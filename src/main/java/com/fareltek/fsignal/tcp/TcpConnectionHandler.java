@@ -44,7 +44,6 @@ public class TcpConnectionHandler {
     }
 
     private void emit(TcpDataEvent event) {
-        Sinks.EmitResult result = dataSink.tryEmitNext(event);
-        if (result.isFailure()) log.warn("[SSE] Emit failed: {}", result);
+        dataSink.emitNext(event, (signalType, result) -> result == Sinks.EmitResult.FAIL_NON_SERIALIZED);
     }
 }

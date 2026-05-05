@@ -1,6 +1,8 @@
 package com.fareltek.fsignal.db;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.nio.ByteBuffer;
@@ -9,10 +11,13 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Table("safety_events")
-public class SafetyEvent {
+public class SafetyEvent implements Persistable<UUID> {
 
     @Id
     private UUID id;
+
+    @Transient
+    private boolean isNew;
     private OffsetDateTime eventTime;
     private OffsetDateTime receiveTime;
     private String sourceAddr;
@@ -34,6 +39,7 @@ public class SafetyEvent {
     public static SafetyEvent fromRaw(String sourceAddr, byte[] rawData, String hex) {
         SafetyEvent e = new SafetyEvent();
         e.id = UUID.randomUUID();
+        e.isNew = true;
         e.eventTime = OffsetDateTime.now(ZoneOffset.UTC);
         e.receiveTime = OffsetDateTime.now(ZoneOffset.UTC);
         e.sourceAddr = sourceAddr;
@@ -45,7 +51,8 @@ public class SafetyEvent {
         return e;
     }
 
-    public UUID getId() { return id; }
+    @Override public UUID getId() { return id; }
+    @Override public boolean isNew() { return isNew; }
     public void setId(UUID id) { this.id = id; }
 
     public OffsetDateTime getEventTime() { return eventTime; }
