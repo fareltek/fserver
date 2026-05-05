@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
@@ -29,8 +30,27 @@ public class SafetyEventService {
         return repository.findTop100ByOrderByEventTimeDesc();
     }
 
+    public Flux<SafetyEvent> getRecent(int limit) {
+        return repository.findTop500ByOrderByEventTimeDesc().take(limit);
+    }
+
     public Flux<SafetyEvent> getUnacknowledged() {
         return repository.findByAcknowledgedFalseOrderByEventTimeDesc();
+    }
+
+    public Flux<SafetyEvent> getFiltered(OffsetDateTime from, OffsetDateTime to,
+                                          String severity, String sourceAddr) {
+        Flux<SafetyEvent> base = (from != null && to != null)
+                ? repository.findByEventTimeBetweenOrderByEventTimeDesc(from, to)
+                : repository.findTop500ByOrderByEventTimeDesc();
+
+        if (severity != null && !severity.isBlank()) {
+            base = base.filter(e -> severity.equalsIgnoreCase(e.getSeverity()));
+        }
+        if (sourceAddr != null && !sourceAddr.isBlank()) {
+            base = base.filter(e -> sourceAddr.equals(e.getSourceAddr()));
+        }
+        return base;
     }
 
     public Mono<SafetyEvent> acknowledge(UUID id, String acknowledgedBy) {
@@ -38,7 +58,7 @@ public class SafetyEventService {
                 .flatMap(event -> {
                     event.setAcknowledged(true);
                     event.setAcknowledgedBy(acknowledgedBy);
-                    event.setAcknowledgedTime(java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC));
+                    event.setAcknowledgedTime(OffsetDateTime.now(java.time.ZoneOffset.UTC));
                     return repository.save(event);
                 });
     }
