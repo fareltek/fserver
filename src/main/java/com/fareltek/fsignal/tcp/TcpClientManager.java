@@ -4,6 +4,7 @@ import com.fareltek.fsignal.section.Section;
 import com.fareltek.fsignal.section.SectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,9 @@ public class TcpClientManager {
     private final SectionService sectionService;
     private final TcpConnectionHandler handler;
     private final Map<Integer, TcpDeviceClient> clients = new ConcurrentHashMap<>();
+
+    @Value("${fsignal.tcp.read-timeout-seconds:300}")
+    private int readTimeoutSeconds;
 
     public TcpClientManager(SectionService sectionService, TcpConnectionHandler handler) {
         this.sectionService = sectionService;
@@ -38,7 +42,7 @@ public class TcpClientManager {
     }
 
     public void startClient(Section s) {
-        TcpDeviceClient client = new TcpDeviceClient(s, handler);
+        TcpDeviceClient client = new TcpDeviceClient(s, handler, readTimeoutSeconds);
         clients.put(s.getId(), client);
         client.start();
     }

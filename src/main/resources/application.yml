@@ -19,6 +19,8 @@ spring:
 fsignal:
   archive:
     path: ${ARCHIVE_PATH:./archive}
+  tcp:
+    read-timeout-seconds: ${TCP_READ_TIMEOUT:300}
 
 logging:
   level:

@@ -260,6 +260,7 @@ td { padding:4px 8px; vertical-align:middle; font-size:11px; }
     <div class="status-dot" id="dot"></div>
     <span id="status-label">Bağlanıyor...</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Tema Değiştir">🌙</button>
+    <button class="theme-btn" id="mute-btn" onclick="toggleMute()" title="Ses Kapat">🔔</button>
   </div>
 </header>
 
@@ -329,9 +330,8 @@ td { padding:4px 8px; vertical-align:middle; font-size:11px; }
           <th style="width:52px">Seq</th>
           <th style="width:44px">SrcID</th>
           <th style="width:48px">Kod</th>
-          <th style="width:40px">Byte</th>
-          <th>Hex</th>
-          <th style="width:36px">Onay</th>
+          <th>Açıklama</th>
+          <th style="width:56px">Onay</th>
         </tr>
       </thead>
       <tbody id="m-tbody"></tbody>
@@ -424,6 +424,7 @@ td { padding:4px 8px; vertical-align:middle; font-size:11px; }
     <div class="rpt-actions">
       <button class="btn" onclick="fetchRecentReport()">Son 100 Kayıt</button>
       <button class="btn primary" onclick="fetchReport()">🔍 Filtreli Getir</button>
+      <button class="btn" id="btn-csv" onclick="exportCSV()" disabled>📥 CSV İndir</button>
       <button class="btn success" id="btn-pdf" onclick="exportPDF()" disabled>⬇ PDF İndir</button>
     </div>
   </div>
@@ -544,9 +545,9 @@ function addLiveRow(ev) {
   const seq      = ev.sequence   != null ? ev.sequence : '—';
   const srcId    = ev.srcId      != null ? ev.srcId    : '—';
   const code     = ev.eventCode  != null ? '0x' + ev.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
-  const dataDisp = ev.ascii || '—';
+  const desc     = ev.description || ev.ascii || (ev.hex ? ev.hex.substring(0,40) : '—');
 
-  if (severity==='ALARM'||severity==='CRITICAL') totalAlarm++;
+  if (severity==='ALARM'||severity==='CRITICAL') { totalAlarm++; playAlert(severity); }
   if (severity==='WARNING') totalWarn++;
   updateStats();
 
@@ -556,9 +557,8 @@ function addLiveRow(ev) {
     section: ev.sectionName||'',
     addr: (ev.remoteAddr||'').replace('/',''),
     severity, msgType, seq, srcId, code,
-    bytes: ev.byteCount,
     hex: ev.hex||'',
-    data: dataDisp,
+    description: desc,
     acknowledged: false,
     id: null
   });
@@ -571,10 +571,9 @@ function addDbRow(e, addrMap) {
   const seq      = e.sequence    != null ? e.sequence   : '—';
   const srcId    = e.sourceId    != null ? e.sourceId   : '—';
   const code     = e.eventCode   != null ? '0x' + e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
-  const hex      = e.description || '';
-  const timeStr  = e.eventTime   ? e.eventTime.replace('T',' ').substring(0,19) : '—';
+  const desc        = e.description || '';
+  const timeStr     = e.eventTime   ? e.eventTime.replace('T',' ').substring(0,19) : '—';
   const sectionName = addrMap[e.sourceAddr] || e.sourceAddr || '';
-  const byteCount   = hex ? Math.floor(hex.trim().split(' ').length) : 0;
 
   appendRow({
     isLive:false,
@@ -582,8 +581,8 @@ function addDbRow(e, addrMap) {
     section: sectionName,
     addr: e.sourceAddr||'',
     severity, msgType, seq, srcId, code,
-    bytes: byteCount,
-    hex, data: '',
+    hex: '',
+    description: desc,
     acknowledged: e.acknowledged,
     id: e.id
   });
@@ -598,10 +597,11 @@ function appendRow(r) {
   const srcBadge= r.isLive
     ? '<span class="badge b-live">LIVE</span>'
     : '<span class="badge b-db">DB</span>';
-  const ackBadge = r.acknowledged
-    ? '<span class="badge b-ack">✓</span>'
-    : '<span class="badge b-unack">—</span>';
-  const hexShort = r.hex.length>60 ? r.hex.substring(0,60)+'…' : r.hex;
+  const ackCell = r.id && !r.acknowledged
+    ? `<button class="btn sm" onclick="ackEvent('${r.id}',this)">Onayla</button>`
+    : (r.acknowledged ? '<span class="badge b-ack">✓</span>' : '<span class="badge b-unack">—</span>');
+  const descText = r.description || r.hex || '';
+  const descShort = descText.length > 70 ? descText.substring(0,70)+'…' : descText;
 
   const tr = document.createElement('tr');
   tr.className = rowCls.trim();
@@ -609,7 +609,7 @@ function appendRow(r) {
   tr.dataset.type     = (r.msgType||'').toLowerCase();
   tr.dataset.section  = (r.section||'').toLowerCase();
   tr.dataset.addr     = (r.addr||'').toLowerCase();
-  tr.dataset.hex      = (r.hex||'').toLowerCase();
+  tr.dataset.hex      = (r.hex||r.description||'').toLowerCase();
   tr.dataset.seq      = String(r.seq||'');
   if (r.id) tr.dataset.id = r.id;
 
@@ -623,9 +623,8 @@ function appendRow(r) {
     <td class="c-num">${esc(String(r.seq))}</td>
     <td class="c-num">${esc(String(r.srcId))}</td>
     <td class="c-code">${esc(r.code)}</td>
-    <td class="c-num">${r.bytes}</td>
-    <td class="c-hex">${esc(hexShort)}</td>
-    <td class="c-ack">${ackBadge}</td>`;
+    <td class="c-hex" title="${esc(r.hex)}">${esc(descShort)}</td>
+    <td class="c-ack">${ackCell}</td>`;
 
   if (!rowMatchesFilter(tr)) tr.style.display='none';
   document.getElementById('m-tbody').appendChild(tr);
@@ -903,10 +902,12 @@ function renderReportTable(data) {
   const rows = data.map((e,i) => {
     const sev  = e.severity||'INFO';
     const dt   = e.eventTime ? e.eventTime.replace('T',' ').substring(0,19) : '—';
-    const hex  = (e.description||'').length>50 ? e.description.substring(0,50)+'…' : (e.description||'—');
+    const desc = (e.description||'').length>90 ? e.description.substring(0,90)+'…' : (e.description||'—');
     const seq  = e.sequence  != null ? e.sequence  : '—';
     const code = e.eventCode != null ? '0x'+e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
-    const ack  = e.acknowledged ? '<span class="badge b-ack">✓ Onaylı</span>' : '<span class="badge b-unack">Bekliyor</span>';
+    const ack  = e.acknowledged
+      ? '<span class="badge b-ack">✓ Onaylı</span>'
+      : (e.id ? `<button class="btn sm" onclick="ackEventReport('${e.id}',this)">Onayla</button>` : '<span class="badge b-unack">Bekliyor</span>');
     let rowStyle='';
     if(sev==='CRITICAL') rowStyle='background:var(--red-bg)';
     else if(sev==='ALARM') rowStyle='background:var(--red-bg);opacity:.85';
@@ -919,8 +920,8 @@ function renderReportTable(data) {
       <td class="c-data">${esc(e.messageType||'—')}</td>
       <td class="c-num">${esc(String(seq))}</td>
       <td class="c-code">${esc(code)}</td>
-      <td class="c-hex" style="font-size:10px">${esc(hex)}</td>
-      <td>${ack}</td>
+      <td class="c-hex" style="font-size:10px" title="${esc(e.description||'')}">${esc(desc)}</td>
+      <td style="text-align:center">${ack}</td>
     </tr>`;
   }).join('');
 
@@ -934,12 +935,13 @@ function renderReportTable(data) {
         <th style="width:90px">Mesaj Tipi</th>
         <th style="width:52px">Seq</th>
         <th style="width:52px">Kod</th>
-        <th>Hex / Açıklama</th>
-        <th style="width:80px;text-align:center">Onay</th>
+        <th>Açıklama</th>
+        <th style="width:90px;text-align:center">Onay</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 
+  document.getElementById('btn-csv').disabled=false;
   document.getElementById('btn-pdf').disabled=false;
 }
 
@@ -976,6 +978,81 @@ async function exportPDF() {
     btn.disabled = false;
     btn.textContent = '⬇ PDF İndir';
   }
+}
+
+// ── ACK ───────────────────────────────────────────────────────────────────
+async function ackEvent(id, btn) {
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/events/${id}/acknowledge?by=operator`, {method:'POST'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    btn.closest('tr').querySelector('.c-ack').innerHTML = '<span class="badge b-ack">✓</span>';
+  } catch(e) { btn.disabled = false; alert('ACK hatası: ' + e.message); }
+}
+
+async function ackEventReport(id, btn) {
+  btn.disabled = true;
+  try {
+    await fetch(`/api/events/${id}/acknowledge?by=operator`, {method:'POST'});
+    btn.closest('td').innerHTML = '<span class="badge b-ack">✓ Onaylı</span>';
+    const ev = reportData.find(e => e.id === id);
+    if (ev) ev.acknowledged = true;
+    const el = document.getElementById('rs-unack');
+    if (el) el.textContent = Math.max(0, parseInt(el.textContent||'0') - 1);
+  } catch(e) { btn.disabled = false; alert('ACK hatası: ' + e.message); }
+}
+
+// ── AUDIO ALERTS ──────────────────────────────────────────────────────────
+let audioMuted = false;
+const AudioCtxCls = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+
+function playAlert(severity) {
+  if (audioMuted || !AudioCtxCls) return;
+  try {
+    if (!audioCtx) audioCtx = new AudioCtxCls();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.frequency.value = severity === 'CRITICAL' ? 880 : 660;
+    osc.type = 'square';
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.6);
+  } catch(e) {}
+}
+
+function toggleMute() {
+  audioMuted = !audioMuted;
+  const btn = document.getElementById('mute-btn');
+  btn.textContent = audioMuted ? '🔇' : '🔔';
+  btn.title = audioMuted ? 'Ses Açık' : 'Ses Kapat';
+}
+
+// ── CSV EXPORT ────────────────────────────────────────────────────────────
+function exportCSV() {
+  if (!reportData.length) return;
+  const hdr = ['#','Zaman (UTC)','Kaynak','Ciddiyet','Mesaj Tipi','Seq','Kod','Açıklama','Onaylı'];
+  const csvRows = reportData.map((e,i) => [
+    i+1,
+    e.eventTime ? e.eventTime.replace('T',' ').substring(0,19) : '',
+    e.sourceAddr||'',
+    e.severity||'',
+    e.messageType||'',
+    e.sequence != null ? e.sequence : '',
+    e.eventCode != null ? '0x'+e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '',
+    (e.description||'').replace(/"/g,'""'),
+    e.acknowledged ? 'Evet' : 'Hayır'
+  ].map(v=>`"${v}"`).join(','));
+  const csv = '﻿' + [hdr.join(','), ...csvRows].join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'FSIGNAL_' + new Date().toISOString().substring(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ── AUTO-REFRESH ──────────────────────────────────────────────────────────

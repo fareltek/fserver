@@ -59,4 +59,23 @@ public class Fa51Parser {
         return new ParsedPacket(msgType, severity, srcId, seq, data,
                 eventCode, eventData, eventFlags, csOk);
     }
+
+    public static String describe(ParsedPacket pkt) {
+        if (pkt == null) return null;
+        String prefix = switch (pkt.severity()) {
+            case "CRITICAL" -> "Kritik Alarm";
+            case "ALARM"    -> "Alarm";
+            case "WARNING"  -> "Uyarı";
+            default         -> pkt.messageType();
+        };
+        var sb = new StringBuilder(prefix)
+                .append(": KaynakID=").append(pkt.sourceId())
+                .append(", Sıra=").append(pkt.sequence());
+        if (pkt.eventCode()  != null) sb.append(", Kod=0x").append(String.format("%02X", pkt.eventCode()));
+        if (pkt.eventData()  != null) sb.append(", Veri=0x").append(String.format("%02X", pkt.eventData()));
+        if (pkt.eventFlags() != null && pkt.eventFlags() != 0)
+            sb.append(", Bayrak=0x").append(String.format("%04X", pkt.eventFlags()));
+        if (!pkt.checksumValid()) sb.append(" [HATALI XOR]");
+        return sb.toString();
+    }
 }

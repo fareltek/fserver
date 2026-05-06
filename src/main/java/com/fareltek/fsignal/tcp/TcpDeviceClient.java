@@ -16,17 +16,17 @@ public class TcpDeviceClient {
 
     private static final Logger log = LoggerFactory.getLogger(TcpDeviceClient.class);
     private static final int RECONNECT_SECONDS = 5;
-    // If no data received for this many seconds, assume connection is dead (cable unplug etc.)
-    private static final int READ_TIMEOUT_SECONDS = 30;
 
     private final Section section;
     private final TcpConnectionHandler handler;
+    private final int readTimeoutSeconds;
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicBoolean connected = new AtomicBoolean(false);
 
-    public TcpDeviceClient(Section section, TcpConnectionHandler handler) {
+    public TcpDeviceClient(Section section, TcpConnectionHandler handler, int readTimeoutSeconds) {
         this.section = section;
         this.handler = handler;
+        this.readTimeoutSeconds = readTimeoutSeconds;
     }
 
     public void start() {
@@ -53,7 +53,7 @@ public class TcpDeviceClient {
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 .doOnConnected(conn -> {
-                    conn.addHandlerLast(new ReadTimeoutHandler(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+                    conn.addHandlerLast(new ReadTimeoutHandler(readTimeoutSeconds, TimeUnit.SECONDS));
                     connected.set(true);
                     handler.onConnected(section);
                 })

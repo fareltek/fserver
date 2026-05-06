@@ -42,8 +42,7 @@ public class SafetyEvent implements Persistable<UUID> {
         e.isNew       = true;
         e.receiveTime = OffsetDateTime.now(ZoneOffset.UTC);
         e.sourceAddr  = sourceAddr;
-        e.rawPayload  = ByteBuffer.wrap(rawData);
-        e.description = hex;
+        e.rawPayload   = ByteBuffer.wrap(rawData);
         e.acknowledged = false;
 
         Fa51Parser.ParsedPacket pkt = Fa51Parser.parse(rawData);
@@ -56,9 +55,11 @@ public class SafetyEvent implements Persistable<UUID> {
             e.eventData   = pkt.eventData();
             e.eventFlags  = pkt.eventFlags();
             e.deviceType  = "FA51-CPU";
+            e.description = Fa51Parser.describe(pkt);
         } else {
             e.messageType = "RAW_DATA";
             e.severity    = "INFO";
+            e.description = rawData.length + " byte: " + (hex.length() > 80 ? hex.substring(0, 80) + "…" : hex);
         }
         e.eventTime = OffsetDateTime.now(ZoneOffset.UTC);
         return e;
