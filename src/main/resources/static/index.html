@@ -64,6 +64,8 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
                   border-radius:10px; font-weight:600; }
 .chip-alarm  { background:var(--red-bg); color:var(--red); border:1px solid var(--red); }
 .chip-warn   { background:var(--yellow-bg); color:var(--yellow); border:1px solid var(--yellow); }
+@keyframes chipblink { 0%,100%{opacity:1} 50%{opacity:.25} }
+.chip-alarm.blinking { animation:chipblink .8s infinite; }
 .status-dot  { width:9px; height:9px; border-radius:50%; background:var(--subtle); transition:background .3s; flex-shrink:0; }
 .status-dot.connected { background:var(--green); box-shadow:0 0 6px var(--green); }
 .status-dot.error     { background:var(--red); }
@@ -316,7 +318,7 @@ td { padding:4px 8px; vertical-align:middle; font-size:11px; }
   </div>
 
   <div class="toolbar">
-    <button class="btn active" id="btn-as" onclick="toggleAS()">↓ Oto Kaydır</button>
+    <button class="btn" id="btn-pause" onclick="togglePause()">⏸ Duraklat</button>
     <div class="tsep"></div>
     <span class="tlabel">Ciddiyet:</span>
     <select class="sel" id="flt-sev" onchange="applyFilter()">
@@ -509,7 +511,8 @@ function toggleTheme() {
 const SEV_CSS  = {INFO:'b-info',DATA:'b-data',WARNING:'b-warning',ALARM:'b-alarm',CRITICAL:'b-critical',HEARTBEAT:'b-heartbeat'};
 const ROW_CSS  = {WARNING:'row-warning',ALARM:'row-alarm',CRITICAL:'row-critical',HEARTBEAT:'row-heartbeat'};
 
-let autoScroll = true;
+let paused = false;
+let pauseBuffer = [];
 let totalPkt=0, totalBytes=0, totalAlarm=0, totalWarn=0;
 const activeSect = new Set();
 let fltSev='', fltType='', fltSect='', fltHex='';
@@ -533,8 +536,10 @@ function connect() {
   es.onmessage = ev => {
     try {
       const d = JSON.parse(ev.data);
-      if (d.type==='DATA') addLiveRow(d);
-      else if (d.type==='CONNECTED'||d.type==='DISCONNECTED') refreshSectionDots();
+      if (d.type==='DATA') {
+        if (paused) pauseBuffer.push(d);
+        else addLiveRow(d);
+      } else if (d.type==='CONNECTED'||d.type==='DISCONNECTED') refreshSectionDots();
     } catch {}
   };
   es.onopen  = () => {
@@ -593,7 +598,11 @@ function addLiveRow(ev) {
   const code     = ev.eventCode  != null ? '0x' + ev.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
   const desc     = ev.description || ev.ascii || (ev.hex ? ev.hex.substring(0,40) : '—');
 
-  if (severity==='ALARM'||severity==='CRITICAL') { totalAlarm++; playAlert(severity); }
+  if (severity==='ALARM'||severity==='CRITICAL') {
+    totalAlarm++;
+    playAlert(severity);
+    document.getElementById('hdr-alarm').classList.add('blinking');
+  }
   if (severity==='WARNING') totalWarn++;
   updateStats();
 
@@ -673,12 +682,12 @@ function appendRow(r) {
     <td class="c-ack">${ackCell}</td>`;
 
   if (!rowMatchesFilter(tr)) tr.style.display='none';
-  document.getElementById('m-tbody').appendChild(tr);
+  const tbody = document.getElementById('m-tbody');
+  tbody.insertBefore(tr, tbody.firstChild);
+  // keep max 500 rows to prevent memory bloat
+  const rows = tbody.querySelectorAll('tr');
+  if (rows.length > 500) rows[rows.length - 1].remove();
   updateCount();
-  if (autoScroll && r.isLive) {
-    const w = document.getElementById('log-wrap');
-    w.scrollTop = w.scrollHeight;
-  }
 }
 
 function showTable() {
@@ -726,9 +735,15 @@ function updateCount() {
     filter ? `${visible} / ${total} kayıt` : `${total} kayıt`;
 }
 
-function toggleAS() {
-  autoScroll = !autoScroll;
-  document.getElementById('btn-as').classList.toggle('active', autoScroll);
+function togglePause() {
+  paused = !paused;
+  const btn = document.getElementById('btn-pause');
+  btn.textContent = paused ? '▶ Devam' : '⏸ Duraklat';
+  btn.classList.toggle('active', paused);
+  if (!paused && pauseBuffer.length) {
+    pauseBuffer.forEach(d => addLiveRow(d));
+    pauseBuffer = [];
+  }
 }
 
 function clearLog() {
@@ -737,8 +752,10 @@ function clearLog() {
   document.getElementById('m-table').style.display='none';
   totalPkt=totalBytes=totalAlarm=totalWarn=0;
   activeSect.clear();
+  pauseBuffer=[];
   ['st-packets','st-bytes','st-alarm','st-warn'].forEach(id=>document.getElementById(id).textContent='0');
   ['st-sect','st-last'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('hdr-alarm').classList.remove('blinking');
   updateCount();
 }
 
