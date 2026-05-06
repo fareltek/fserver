@@ -1,9 +1,12 @@
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
-RUN mvn dependency:go-offline
+# BuildKit cache keeps .m2 across builds — pom.xml değişse bile dep'ler yeniden indirilmez
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn dependency:go-offline -q
 COPY src ./src
-RUN mvn clean package -DskipTests -e
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn clean package -DskipTests -q
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
