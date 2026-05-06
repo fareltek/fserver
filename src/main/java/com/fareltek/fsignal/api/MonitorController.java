@@ -47,6 +47,26 @@ public class MonitorController {
                       "timestamp", LocalDateTime.now().toString());
     }
 
+    @GetMapping("/api/stats")
+    public Mono<Map<String, Object>> globalStats() {
+        var sectStats = handler.getSectionStats();
+        long connectedSections = sectStats.values().stream().filter(s -> s.connected).count();
+        long totalPackets      = sectStats.values().stream().mapToLong(s -> s.packets.get()).sum();
+        long totalBytesRcv     = sectStats.values().stream().mapToLong(s -> s.totalBytes.get()).sum();
+
+        return Mono.zip(safetyEventService.getTotalCount(), safetyEventService.getUnacknowledgedCount())
+                .map(t -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("totalEvents",          t.getT1());
+                    m.put("unacknowledgedAlarms",  t.getT2());
+                    m.put("connectedSections",     connectedSections);
+                    m.put("totalPackets",          totalPackets);
+                    m.put("totalBytesReceived",    totalBytesRcv);
+                    m.put("serverTime",            LocalDateTime.now(ZoneOffset.UTC).toString());
+                    return m;
+                });
+    }
+
     @GetMapping(value = "/api/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<TcpDataEvent> stream() {
         Flux<TcpDataEvent> heartbeat = Flux.interval(Duration.ofSeconds(15))

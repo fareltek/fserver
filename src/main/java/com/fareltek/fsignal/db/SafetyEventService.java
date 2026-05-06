@@ -57,6 +57,14 @@ public class SafetyEventService {
         return base;
     }
 
+    public Mono<Long> getTotalCount() {
+        return repository.count();
+    }
+
+    public Mono<Long> getUnacknowledgedCount() {
+        return repository.countByAcknowledgedFalse();
+    }
+
     public Mono<SafetyEvent> acknowledge(UUID id, String acknowledgedBy) {
         return repository.findById(id)
                 .flatMap(event -> {
