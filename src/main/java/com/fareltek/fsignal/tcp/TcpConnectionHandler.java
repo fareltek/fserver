@@ -31,10 +31,17 @@ public class TcpConnectionHandler {
     }
 
     public void onData(Section s, byte[] data) {
-        TcpDataEvent event = TcpDataEvent.fromData(s.getId(), s.getName(), s.sourceAddr(), data);
-        log.info("[TCP-DATA][{}] {} bytes | {}", s.getName(), event.byteCount(), event.hex());
-        emit(event);
+        Fa51Parser.ParsedPacket pkt = Fa51Parser.parse(data);
+        TcpDataEvent event = TcpDataEvent.fromData(s.getId(), s.getName(), s.sourceAddr(), data, pkt);
 
+        if (pkt != null) {
+            log.info("[TCP-DATA][{}] {} seq={} type={} cs={}", s.getName(),
+                    event.byteCount(), pkt.sequence(), pkt.messageType(), pkt.checksumValid());
+        } else {
+            log.info("[TCP-DATA][{}] {} bytes (raw) | {}", s.getName(), event.byteCount(), event.hex());
+        }
+
+        emit(event);
         safetyEventService.save(s.sourceAddr(), data, event.hex())
                 .subscribe(null, e -> log.error("[DB] Kayit hatasi: {}", e.getMessage()));
     }

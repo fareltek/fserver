@@ -16,6 +16,10 @@ spring:
     password: ${DB_PASS:2580}
     locations: classpath:db/migration
 
+fsignal:
+  archive:
+    path: ${ARCHIVE_PATH:./archive}
+
 logging:
   level:
     com.fareltek.fsignal: DEBUG

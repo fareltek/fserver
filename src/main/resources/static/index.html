@@ -1,167 +1,265 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FSignal — Admin Panel</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
+/* ── THEME ──────────────────────────────────────────────────────────────── */
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --elevated:  #21262d;
+  --border:    #30363d;
+  --text:      #e6edf3;
+  --muted:     #7d8590;
+  --subtle:    #3d444d;
+  --blue:      #58a6ff;
+  --green:     #3fb950;
+  --yellow:    #d29922;
+  --red:       #f85149;
+  --purple:    #d2a8ff;
+  --orange:    #fb8500;
+  --blue-bg:   #0d2041;
+  --green-bg:  #1a3a1e;
+  --yellow-bg: #2d200a;
+  --red-bg:    #2d0d0d;
+}
+html[data-theme="light"] {
+  --bg:        #f6f8fa;
+  --surface:   #ffffff;
+  --elevated:  #f0f6fc;
+  --border:    #d0d7de;
+  --text:      #1f2328;
+  --muted:     #636c76;
+  --subtle:    #a0a7af;
+  --blue:      #0969da;
+  --green:     #1a7f37;
+  --yellow:    #9a6700;
+  --red:       #cf222e;
+  --purple:    #8250df;
+  --orange:    #bc4c00;
+  --blue-bg:   #dbeafe;
+  --green-bg:  #dcfce7;
+  --yellow-bg: #fef9c3;
+  --red-bg:    #fee2e2;
+}
+
+/* ── RESET ───────────────────────────────────────────────────────────────── */
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#0d1117; color:#e6edf3; font-family:'Consolas','Monaco','Courier New',monospace; font-size:13px; height:100vh; display:flex; flex-direction:column; }
+body { background:var(--bg); color:var(--text); font-family:'Consolas','Monaco','Courier New',monospace;
+       font-size:13px; height:100vh; display:flex; flex-direction:column; transition:background .2s,color .2s; }
 
-/* ── HEADER ── */
-header { background:#161b22; border-bottom:1px solid #30363d; padding:10px 20px; display:flex; align-items:center; gap:14px; flex-shrink:0; }
-header h1 { font-size:14px; font-weight:600; color:#58a6ff; letter-spacing:1px; }
-header .subtitle { color:#7d8590; font-size:10px; }
+/* ── HEADER ──────────────────────────────────────────────────────────────── */
+header { background:var(--surface); border-bottom:1px solid var(--border); padding:0 20px;
+         display:flex; align-items:center; gap:12px; height:48px; flex-shrink:0; }
+.hdr-logo { display:flex; align-items:center; gap:10px; }
+.hdr-logo h1 { font-size:15px; font-weight:700; color:var(--blue); letter-spacing:1.5px; }
+.hdr-logo .sub { color:var(--muted); font-size:9px; margin-top:1px; letter-spacing:.5px; }
+.sil-badge { background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue);
+             font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:.5px; }
 .hdr-right { margin-left:auto; display:flex; align-items:center; gap:14px; }
-.status-dot { width:9px; height:9px; border-radius:50%; background:#3d444d; flex-shrink:0; transition:background .3s; }
-.status-dot.connected { background:#3fb950; box-shadow:0 0 6px #3fb95088; }
-.status-dot.error { background:#f85149; }
-#status-label { font-size:11px; color:#7d8590; }
+.hdr-alarms { display:flex; gap:8px; }
+.hdr-alarm-chip { display:flex; align-items:center; gap:4px; font-size:10px; padding:2px 8px;
+                  border-radius:10px; font-weight:600; }
+.chip-alarm  { background:var(--red-bg); color:var(--red); border:1px solid var(--red); }
+.chip-warn   { background:var(--yellow-bg); color:var(--yellow); border:1px solid var(--yellow); }
+.status-dot  { width:9px; height:9px; border-radius:50%; background:var(--subtle); transition:background .3s; flex-shrink:0; }
+.status-dot.connected { background:var(--green); box-shadow:0 0 6px var(--green); }
+.status-dot.error     { background:var(--red); }
+#status-label { font-size:11px; color:var(--muted); }
+.theme-btn { background:var(--elevated); border:1px solid var(--border); color:var(--text);
+             width:30px; height:30px; border-radius:6px; cursor:pointer; font-size:14px;
+             display:flex; align-items:center; justify-content:center; transition:background .15s; }
+.theme-btn:hover { background:var(--border); }
 
-/* ── TABS ── */
-.tabs { background:#161b22; border-bottom:1px solid #30363d; padding:0 20px; display:flex; flex-shrink:0; }
-.tab { padding:9px 18px; cursor:pointer; font-size:12px; color:#7d8590; border-bottom:2px solid transparent; transition:color .15s,border-color .15s; user-select:none; }
-.tab:hover { color:#e6edf3; }
-.tab.active { color:#58a6ff; border-bottom-color:#58a6ff; }
+/* ── TABS ────────────────────────────────────────────────────────────────── */
+.tabs { background:var(--surface); border-bottom:1px solid var(--border);
+        padding:0 20px; display:flex; flex-shrink:0; }
+.tab { padding:10px 18px; cursor:pointer; font-size:12px; color:var(--muted);
+       border-bottom:2px solid transparent; transition:color .15s,border-color .15s; user-select:none; }
+.tab:hover { color:var(--text); }
+.tab.active { color:var(--blue); border-bottom-color:var(--blue); }
 
-/* ── VIEWS ── */
+/* ── VIEWS ───────────────────────────────────────────────────────────────── */
 .view { display:none; flex:1; flex-direction:column; min-height:0; }
 .view.active { display:flex; }
 
-/* ── STATS ── */
-.stats { background:#161b22; border-bottom:1px solid #30363d; padding:7px 20px; display:flex; gap:24px; flex-shrink:0; flex-wrap:wrap; }
+/* ── STATS BAR ───────────────────────────────────────────────────────────── */
+.stats { background:var(--surface); border-bottom:1px solid var(--border);
+         padding:6px 20px; display:flex; gap:22px; flex-shrink:0; flex-wrap:wrap; }
 .stat { display:flex; flex-direction:column; gap:1px; }
-.stat-label { color:#7d8590; font-size:10px; text-transform:uppercase; letter-spacing:.5px; }
-.stat-value { font-size:16px; font-weight:600; color:#e6edf3; }
-.v-green { color:#3fb950; } .v-blue { color:#58a6ff; } .v-orange { color:#d29922; } .v-red { color:#f85149; } .v-purple { color:#d2a8ff; }
+.stat-label { color:var(--muted); font-size:9px; text-transform:uppercase; letter-spacing:.5px; }
+.stat-value { font-size:15px; font-weight:700; color:var(--text); }
+.v-green  { color:var(--green)!important; }
+.v-blue   { color:var(--blue)!important; }
+.v-yellow { color:var(--yellow)!important; }
+.v-red    { color:var(--red)!important; }
+.v-purple { color:var(--purple)!important; }
 
-/* ── TOOLBAR ── */
-.toolbar { background:#161b22; border-bottom:1px solid #30363d; padding:5px 16px; display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
-.btn { background:#21262d; border:1px solid #30363d; color:#e6edf3; padding:4px 12px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:12px; transition:background .15s,border-color .15s; white-space:nowrap; }
-.btn:hover { background:#2d333b; border-color:#8b949e; }
-.btn.active { background:#1f6feb; border-color:#388bfd; color:#fff; }
+/* ── TOOLBAR ─────────────────────────────────────────────────────────────── */
+.toolbar { background:var(--surface); border-bottom:1px solid var(--border);
+           padding:5px 16px; display:flex; align-items:center; gap:7px; flex-shrink:0; flex-wrap:wrap; }
+.btn { background:var(--elevated); border:1px solid var(--border); color:var(--text);
+       padding:4px 11px; border-radius:6px; cursor:pointer; font-family:inherit;
+       font-size:11px; transition:background .15s,border-color .15s; white-space:nowrap; }
+.btn:hover { background:var(--border); }
+.btn.active  { background:#1f6feb; border-color:#388bfd; color:#fff; }
 .btn.primary { background:#1f6feb; border-color:#388bfd; color:#fff; }
 .btn.primary:hover { background:#388bfd; }
-.btn.danger { } .btn.danger:hover { background:#b62324; border-color:#f85149; }
-.btn.success { background:#1a3a1e; border-color:#3fb950; color:#3fb950; }
-.btn.success:hover { background:#3fb950; color:#fff; }
-.btn.sm { padding:3px 9px; font-size:11px; }
-.tsep { width:1px; height:20px; background:#30363d; flex-shrink:0; }
-.sel, .inp { background:#0d1117; border:1px solid #30363d; color:#e6edf3; padding:4px 8px; border-radius:6px; font-family:inherit; font-size:11px; outline:none; }
-.sel:focus,.inp:focus { border-color:#388bfd; }
-.inp::placeholder { color:#3d444d; }
-.inp-wide { width:190px; }
-.tlabel { color:#7d8590; font-size:11px; white-space:nowrap; }
-.tright { margin-left:auto; display:flex; align-items:center; gap:10px; color:#7d8590; font-size:11px; }
+.btn.success { background:var(--green-bg); border-color:var(--green); color:var(--green); }
+.btn.success:hover { background:var(--green); color:#fff; }
+.btn.sm { padding:3px 8px; font-size:10px; }
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+.tsep  { width:1px; height:20px; background:var(--border); flex-shrink:0; }
+.sel,.inp { background:var(--bg); border:1px solid var(--border); color:var(--text);
+            padding:4px 8px; border-radius:6px; font-family:inherit; font-size:11px; outline:none; }
+.sel:focus,.inp:focus { border-color:var(--blue); }
+.inp::placeholder { color:var(--subtle); }
+.tlabel { color:var(--muted); font-size:10px; white-space:nowrap; }
+.tright { margin-left:auto; display:flex; align-items:center; gap:10px; color:var(--muted); font-size:11px; }
 
-/* ── EVENT TABLE ── */
+/* ── EVENT TABLE ─────────────────────────────────────────────────────────── */
 .log-wrap { flex:1; overflow-y:auto; }
-.log-wrap::-webkit-scrollbar { width:6px; } .log-wrap::-webkit-scrollbar-track { background:#0d1117; } .log-wrap::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
+.log-wrap::-webkit-scrollbar { width:5px; }
+.log-wrap::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 table { width:100%; border-collapse:collapse; }
-thead { position:sticky; top:0; z-index:10; background:#161b22; }
-thead th { padding:7px 10px; text-align:left; color:#7d8590; font-size:10px; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid #30363d; font-weight:500; white-space:nowrap; }
-tbody tr { border-bottom:1px solid #161b22; transition:background .1s; }
-tbody tr.is-live { animation:fadeIn .2s ease; }
-tbody tr:hover { background:#1c2128; }
-tbody tr.row-warning { border-left:2px solid #d29922; }
-tbody tr.row-alarm   { border-left:2px solid #f85149; }
-tbody tr.row-critical{ border-left:2px solid #ff4444; background:#160a0a; }
-tbody tr.row-heartbeat td { opacity:.35; }
-tbody tr.row-db td { opacity:.75; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(-3px)} to{opacity:1;transform:translateY(0)} }
-td { padding:5px 10px; vertical-align:middle; font-size:12px; }
-.c-time { color:#7d8590; white-space:nowrap; font-size:11px; }
-.c-name { color:#d2a8ff; font-weight:600; white-space:nowrap; }
-.c-addr { color:#58a6ff; font-size:11px; white-space:nowrap; }
-.c-seq  { color:#555d68; text-align:right; font-size:11px; }
-.c-byte { color:#d29922; text-align:right; font-weight:600; font-size:11px; }
-.c-hex  { color:#3fb950; font-size:11px; word-break:break-all; max-width:300px; }
-.c-data { color:#8d96a0; font-size:11px; max-width:160px; word-break:break-all; }
+thead { position:sticky; top:0; z-index:10; background:var(--surface); }
+thead th { padding:6px 8px; text-align:left; color:var(--muted); font-size:9px;
+           text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--border);
+           font-weight:600; white-space:nowrap; }
+tbody tr { border-bottom:1px solid var(--surface); transition:background .08s; }
+tbody tr.is-live { animation:slideIn .2s ease; }
+tbody tr:hover { background:var(--elevated); }
+tbody tr.row-warning  { border-left:3px solid var(--yellow); }
+tbody tr.row-alarm    { border-left:3px solid var(--red); }
+tbody tr.row-critical { border-left:3px solid var(--red); background:var(--red-bg); }
+tbody tr.row-heartbeat td { opacity:.3; }
+tbody tr.row-db td { opacity:.8; }
+@keyframes slideIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+td { padding:4px 8px; vertical-align:middle; font-size:11px; }
+.c-time  { color:var(--muted); white-space:nowrap; font-size:10px; }
+.c-name  { color:var(--purple); font-weight:600; white-space:nowrap; }
+.c-addr  { color:var(--blue); font-size:10px; white-space:nowrap; }
+.c-num   { color:var(--muted); text-align:right; font-size:10px; }
+.c-hex   { color:var(--green); font-size:10px; word-break:break-all; max-width:200px; }
+.c-code  { color:var(--orange); font-size:10px; font-weight:600; }
+.c-data  { color:var(--muted); font-size:10px; }
+.c-ack   { text-align:center; }
 
-/* type badges */
-.badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:10px; font-weight:600; white-space:nowrap; }
-.b-data      { background:#0d2041; color:#58a6ff; border:1px solid #1f6feb44; }
-.b-warning   { background:#2d200a; color:#d29922; border:1px solid #d2992244; }
-.b-alarm     { background:#2d0d0d; color:#f85149; border:1px solid #f8514944; }
-.b-critical  { background:#3d0909; color:#ff6b6b; border:1px solid #ff000055; font-weight:800; }
-.b-heartbeat { background:#1c2128; color:#555d68; border:1px solid #30363d; }
-.b-raw       { background:#1c2128; color:#7d8590; border:1px solid #30363d; }
-.b-info      { background:#1a2d4a; color:#58a6ff; border:1px solid #1f6feb44; }
-.b-live { background:#1a3a1e; color:#3fb950; border:1px solid #3fb95033; font-size:9px; }
-.b-db   { background:#1c2128; color:#555d68; border:1px solid #30363d; font-size:9px; }
+/* badges */
+.badge { display:inline-block; padding:1px 6px; border-radius:9px; font-size:9px; font-weight:700; white-space:nowrap; }
+.b-data      { background:var(--blue-bg); color:var(--blue); }
+.b-warning   { background:var(--yellow-bg); color:var(--yellow); }
+.b-alarm     { background:var(--red-bg); color:var(--red); }
+.b-critical  { background:#3d0909; color:#ff6b6b; font-size:9px; }
+.b-heartbeat { background:var(--elevated); color:var(--subtle); }
+.b-info      { background:var(--blue-bg); color:var(--blue); }
+.b-raw       { background:var(--elevated); color:var(--muted); }
+.b-live      { background:var(--green-bg); color:var(--green); font-size:8px; }
+.b-db        { background:var(--elevated); color:var(--subtle); font-size:8px; }
+.b-ack       { background:var(--green-bg); color:var(--green); font-size:8px; }
+.b-unack     { background:var(--yellow-bg); color:var(--yellow); font-size:8px; }
 
 /* empty */
-.empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#7d8590; gap:8px; }
-.empty-icon { font-size:32px; } .empty-title { font-size:14px; color:#8d96a0; } .empty-hint { font-size:12px; }
+.empty { display:flex; flex-direction:column; align-items:center; justify-content:center;
+         height:100%; color:var(--muted); gap:8px; }
+.empty-icon  { font-size:32px; }
+.empty-title { font-size:14px; color:var(--muted); }
+.empty-hint  { font-size:11px; }
 
-/* ── SECTIONS ── */
-.sec-toolbar { background:#161b22; border-bottom:1px solid #30363d; padding:9px 20px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
-.sec-toolbar-title { font-size:12px; color:#7d8590; margin-right:auto; }
-.sec-body { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:14px; }
-.sec-body::-webkit-scrollbar { width:6px; } .sec-body::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
-.sec-card { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:12px 16px; display:flex; align-items:center; gap:12px; transition:border-color .2s,border-left-color .3s,opacity .3s; }
-.sec-card:hover { border-color:#8b949e; }
-.sec-card.is-new { animation:fadeIn .25s ease; }
-.sec-card.c-conn { border-left:3px solid #3fb950; }
-.sec-card.c-disc { border-left:3px solid #30363d; }
-.sec-card.c-dis  { border-left:3px solid #3d444d; opacity:.55; }
+/* ── SECTIONS ────────────────────────────────────────────────────────────── */
+.sec-toolbar { background:var(--surface); border-bottom:1px solid var(--border);
+               padding:9px 20px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.sec-toolbar-title { font-size:11px; color:var(--muted); margin-right:auto; }
+.sec-body { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:12px; }
+.sec-body::-webkit-scrollbar { width:5px; }
+.sec-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.sec-card { background:var(--surface); border:1px solid var(--border); border-radius:8px;
+            padding:12px 16px; display:flex; align-items:center; gap:12px;
+            transition:border-color .2s; }
+.sec-card:hover { border-color:var(--muted); }
+.sec-card.is-new { animation:slideIn .25s ease; }
+.sec-card.c-conn { border-left:3px solid var(--green); }
+.sec-card.c-disc { border-left:3px solid var(--border); }
+.sec-card.c-dis  { border-left:3px solid var(--subtle); opacity:.55; }
 .sec-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; transition:background .3s,box-shadow .3s; }
-.sec-dot.on  { background:#3fb950; box-shadow:0 0 6px #3fb95066; }
-.sec-dot.off { background:#3d444d; }
+.sec-dot.on  { background:var(--green); box-shadow:0 0 6px var(--green); }
+.sec-dot.off { background:var(--subtle); }
 .sec-info { flex:1; min-width:0; }
-.sec-name { font-size:13px; font-weight:600; color:#e6edf3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sec-addr { font-size:11px; color:#58a6ff; margin-top:2px; }
-.sec-desc { font-size:11px; color:#7d8590; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sec-badge { font-size:10px; padding:2px 8px; border-radius:12px; white-space:nowrap; flex-shrink:0; transition:background .3s,color .3s; }
-.sb-conn { background:#1a3a1e; color:#3fb950; border:1px solid #2ea04326; }
-.sb-disc { background:#21262d; color:#7d8590; border:1px solid #30363d; }
-.sb-dis  { background:#21262d; color:#3d444d; border:1px solid #30363d; }
+.sec-name { font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sec-addr { font-size:10px; color:var(--blue); margin-top:2px; }
+.sec-desc { font-size:10px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sec-badge { font-size:10px; padding:2px 8px; border-radius:10px; white-space:nowrap; flex-shrink:0; }
+.sb-conn { background:var(--green-bg); color:var(--green); border:1px solid var(--green); }
+.sb-disc { background:var(--elevated); color:var(--muted); border:1px solid var(--border); }
+.sb-dis  { background:var(--elevated); color:var(--subtle); border:1px solid var(--border); }
 .sec-actions { display:flex; gap:6px; flex-shrink:0; }
+.sec-empty { text-align:center; padding:40px; color:var(--muted); font-size:12px; }
 
-/* ── FORM ── */
-.form-panel { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:16px 20px; display:none; }
+/* form */
+.form-panel { background:var(--surface); border:1px solid var(--border); border-radius:8px;
+              padding:16px 20px; display:none; }
 .form-panel.open { display:block; }
-.form-title { font-size:13px; font-weight:600; color:#e6edf3; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid #30363d; }
+.form-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:12px;
+              padding-bottom:10px; border-bottom:1px solid var(--border); }
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
 .fg { display:flex; flex-direction:column; gap:4px; } .fg.full { grid-column:1/-1; }
-.fl { font-size:10px; color:#7d8590; text-transform:uppercase; letter-spacing:.4px; }
-.fi, .fs { background:#0d1117; border:1px solid #30363d; color:#e6edf3; padding:6px 10px; border-radius:6px; font-family:inherit; font-size:12px; outline:none; transition:border-color .15s; }
-.fi:focus,.fs:focus { border-color:#388bfd; }
-.fi::placeholder { color:#3d444d; }
-.fs option { background:#161b22; }
+.fl { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+.fi,.fs { background:var(--bg); border:1px solid var(--border); color:var(--text);
+          padding:6px 10px; border-radius:6px; font-family:inherit; font-size:12px; outline:none; }
+.fi:focus,.fs:focus { border-color:var(--blue); }
+.fi::placeholder { color:var(--subtle); }
+.fs option { background:var(--surface); }
 .form-actions { display:flex; gap:8px; justify-content:flex-end; }
-.form-error { font-size:11px; color:#f85149; margin-top:6px; display:none; }
-.sec-empty { text-align:center; padding:40px; color:#7d8590; font-size:12px; }
+.form-error { font-size:11px; color:var(--red); margin-top:6px; display:none; }
 #section-list { display:flex; flex-direction:column; gap:10px; }
 
-/* ── REPORT TAB ── */
-.rpt-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0; }
-.rpt-body::-webkit-scrollbar { width:6px; } .rpt-body::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
-.rpt-filters { background:#161b22; border-bottom:1px solid #30363d; padding:14px 20px; display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; flex-shrink:0; }
-.rpt-fg { display:flex; flex-direction:column; gap:5px; }
-.rpt-label { font-size:10px; color:#7d8590; text-transform:uppercase; letter-spacing:.4px; }
-.rpt-input,.rpt-sel { background:#0d1117; border:1px solid #30363d; color:#e6edf3; padding:6px 10px; border-radius:6px; font-family:inherit; font-size:12px; outline:none; }
-.rpt-input:focus,.rpt-sel:focus { border-color:#388bfd; }
-.rpt-actions { margin-left:auto; display:flex; gap:8px; align-self:flex-end; }
-.rpt-summary { background:#161b22; border-bottom:1px solid #30363d; padding:10px 20px; display:flex; gap:24px; flex-shrink:0; flex-wrap:wrap; }
+/* ── REPORT TAB ──────────────────────────────────────────────────────────── */
+.rpt-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+.rpt-body::-webkit-scrollbar { width:5px; }
+.rpt-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+.rpt-filters { background:var(--surface); border-bottom:1px solid var(--border);
+               padding:12px 20px; display:flex; flex-wrap:wrap; gap:10px;
+               align-items:flex-end; flex-shrink:0; }
+.rpt-fg { display:flex; flex-direction:column; gap:4px; }
+.rpt-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+.rpt-input,.rpt-sel { background:var(--bg); border:1px solid var(--border); color:var(--text);
+                      padding:5px 9px; border-radius:6px; font-family:inherit; font-size:11px; outline:none; }
+.rpt-input:focus,.rpt-sel:focus { border-color:var(--blue); }
+.rpt-actions { margin-left:auto; display:flex; gap:7px; align-self:flex-end; flex-wrap:wrap; }
+
+.rpt-summary { background:var(--surface); border-bottom:1px solid var(--border);
+               padding:8px 20px; display:flex; gap:20px; flex-shrink:0; flex-wrap:wrap; }
+
 .rpt-result { flex:1; overflow-y:auto; }
-.rpt-result::-webkit-scrollbar { width:6px; } .rpt-result::-webkit-scrollbar-thumb { background:#30363d; border-radius:3px; }
-.rpt-empty { padding:48px; text-align:center; color:#7d8590; font-size:12px; }
-.rpt-loading { padding:32px; text-align:center; color:#58a6ff; font-size:12px; }
+.rpt-result::-webkit-scrollbar { width:5px; }
+.rpt-result::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.rpt-empty   { padding:48px; text-align:center; color:var(--muted); font-size:12px; }
+.rpt-loading { padding:32px; text-align:center; color:var(--blue); font-size:12px; }
+.spinner { display:inline-block; animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="status-dot" id="dot"></div>
-  <div>
-    <h1>FSIGNAL — ADMIN PANEL</h1>
-    <div class="subtitle">Tramway Signalization Monitor · EN50129 · SIL2</div>
+  <div class="hdr-logo">
+    <div>
+      <h1>FSIGNAL</h1>
+      <div class="sub">TRAMWAY SIGNALIZATION · EN50129 · SIL2</div>
+    </div>
+  </div>
+  <span class="sil-badge">SIL 2</span>
+  <div class="hdr-alarms">
+    <span class="hdr-alarm-chip chip-alarm" id="hdr-alarm">⚠ ALARM: 0</span>
+    <span class="hdr-alarm-chip chip-warn"  id="hdr-warn">⚡ WARN: 0</span>
   </div>
   <div class="hdr-right">
+    <div class="status-dot" id="dot"></div>
     <span id="status-label">Bağlanıyor...</span>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Tema Değiştir">🌙</button>
   </div>
 </header>
 
@@ -171,21 +269,29 @@ td { padding:5px 10px; vertical-align:middle; font-size:12px; }
   <div class="tab"        id="tab-report"   onclick="switchTab('report')">📊 Raporlama</div>
 </div>
 
-<!-- ══════════════════════════════ MONITOR ══════════════════════════════ -->
+<!-- ══════════════════════════════ MONITOR ══════════════════════════════════ -->
 <div class="view active" id="view-monitor">
   <div class="stats">
     <div class="stat"><span class="stat-label">Toplam Paket</span><span class="stat-value v-green"  id="st-packets">0</span></div>
     <div class="stat"><span class="stat-label">Toplam Byte</span> <span class="stat-value v-blue"   id="st-bytes">0</span></div>
-    <div class="stat"><span class="stat-label">Aktif Section</span><span class="stat-value v-orange" id="st-sect">—</span></div>
-    <div class="stat"><span class="stat-label">Alarm</span>        <span class="stat-value v-red"    id="st-alarm">0</span></div>
-    <div class="stat"><span class="stat-label">Warning</span>      <span class="stat-value v-orange" id="st-warn">0</span></div>
-    <div class="stat"><span class="stat-label">DB Kayıt</span>     <span class="stat-value v-purple" id="st-db">—</span></div>
-    <div class="stat"><span class="stat-label">Son Paket</span>    <span class="stat-value"          id="st-last">—</span></div>
+    <div class="stat"><span class="stat-label">Aktif Section</span><span class="stat-value v-yellow" id="st-sect">—</span></div>
+    <div class="stat"><span class="stat-label">Alarm/Kritik</span> <span class="stat-value v-red"    id="st-alarm">0</span></div>
+    <div class="stat"><span class="stat-label">Uyarı</span>       <span class="stat-value v-yellow" id="st-warn">0</span></div>
+    <div class="stat"><span class="stat-label">DB Kayıt</span>    <span class="stat-value v-purple"  id="st-db">—</span></div>
+    <div class="stat"><span class="stat-label">Son Paket</span>   <span class="stat-value"           id="st-last">—</span></div>
   </div>
 
   <div class="toolbar">
     <button class="btn active" id="btn-as" onclick="toggleAS()">↓ Oto Kaydır</button>
     <div class="tsep"></div>
+    <span class="tlabel">Ciddiyet:</span>
+    <select class="sel" id="flt-sev" onchange="applyFilter()">
+      <option value="">Tümü</option>
+      <option value="INFO">INFO</option>
+      <option value="WARNING">WARNING</option>
+      <option value="ALARM">ALARM</option>
+      <option value="CRITICAL">CRITICAL</option>
+    </select>
     <span class="tlabel">Tip:</span>
     <select class="sel" id="flt-type" onchange="applyFilter()">
       <option value="">Tümü</option>
@@ -194,15 +300,14 @@ td { padding:5px 10px; vertical-align:middle; font-size:12px; }
       <option value="ALARM">ALARM</option>
       <option value="CRITICAL">CRITICAL</option>
       <option value="HEARTBEAT">HEARTBEAT</option>
-      <option value="RAW">RAW</option>
     </select>
-    <span class="tlabel">Kaynak:</span>
+    <span class="tlabel">Section:</span>
     <select class="sel" id="flt-sect" onchange="applyFilter()">
       <option value="">Tümü</option>
     </select>
-    <input class="inp inp-wide" id="flt-hex" type="text" placeholder="Hex / adres ara..." oninput="applyFilter()">
+    <input class="inp" id="flt-hex" type="text" placeholder="Hex / adres / seq ara..." oninput="applyFilter()" style="width:180px">
     <div class="tsep"></div>
-    <button class="btn danger" onclick="clearLog()">Temizle</button>
+    <button class="btn" onclick="clearLog()">Temizle</button>
     <div class="tright"><span id="vis-count">0 kayıt</span></div>
   </div>
 
@@ -212,18 +317,21 @@ td { padding:5px 10px; vertical-align:middle; font-size:12px; }
       <div class="empty-title">Veriler yükleniyor...</div>
       <div class="empty-hint">DB geçmişi ve canlı SSE birleştirilecek</div>
     </div>
-    <table id="m-table" style="display:none;">
+    <table id="m-table" style="display:none">
       <thead>
         <tr>
-          <th style="width:10px;"></th>
-          <th style="width:82px;">Zaman</th>
-          <th style="width:95px;">Section</th>
-          <th style="width:135px;">Adres</th>
-          <th style="width:92px;">Tip</th>
-          <th style="width:48px;">Seq</th>
-          <th style="width:44px;">Byte</th>
+          <th style="width:42px">Kaynak</th>
+          <th style="width:88px">Zaman</th>
+          <th style="width:100px">Section</th>
+          <th style="width:130px">Adres</th>
+          <th style="width:70px">Ciddiyet</th>
+          <th style="width:70px">Mesaj Tipi</th>
+          <th style="width:52px">Seq</th>
+          <th style="width:44px">SrcID</th>
+          <th style="width:48px">Kod</th>
+          <th style="width:40px">Byte</th>
           <th>Hex</th>
-          <th style="width:150px;">Veri</th>
+          <th style="width:36px">Onay</th>
         </tr>
       </thead>
       <tbody id="m-tbody"></tbody>
@@ -231,7 +339,7 @@ td { padding:5px 10px; vertical-align:middle; font-size:12px; }
   </div>
 </div>
 
-<!-- ══════════════════════════ SECTIONS ════════════════════════════════ -->
+<!-- ══════════════════════════ SECTIONS ════════════════════════════════════ -->
 <div class="view" id="view-sections">
   <div class="sec-toolbar">
     <span class="sec-toolbar-title" id="sec-summary">Yükleniyor...</span>
@@ -259,7 +367,7 @@ td { padding:5px 10px; vertical-align:middle; font-size:12px; }
   </div>
 </div>
 
-<!-- ══════════════════════════ REPORT ══════════════════════════════════ -->
+<!-- ══════════════════════════ REPORT ══════════════════════════════════════ -->
 <div class="view" id="view-report">
   <div class="rpt-filters">
     <div class="rpt-fg">
@@ -271,13 +379,11 @@ td { padding:5px 10px; vertical-align:middle; font-size:12px; }
       <input class="rpt-input" id="rpt-to" type="date">
     </div>
     <div class="rpt-fg">
-      <label class="rpt-label">Section</label>
-      <select class="rpt-sel" id="rpt-sect">
-        <option value="">Tümü</option>
-      </select>
+      <label class="rpt-label">Section / Kaynak</label>
+      <select class="rpt-sel" id="rpt-sect"><option value="">Tümü</option></select>
     </div>
     <div class="rpt-fg">
-      <label class="rpt-label">Önem Seviyesi</label>
+      <label class="rpt-label">Ciddiyet</label>
       <select class="rpt-sel" id="rpt-sev">
         <option value="">Tümü</option>
         <option value="INFO">INFO</option>
@@ -286,40 +392,85 @@ td { padding:5px 10px; vertical-align:middle; font-size:12px; }
         <option value="CRITICAL">CRITICAL</option>
       </select>
     </div>
+    <div class="rpt-fg">
+      <label class="rpt-label">Mesaj Tipi</label>
+      <select class="rpt-sel" id="rpt-msgtype">
+        <option value="">Tümü</option>
+        <option value="DATA">DATA</option>
+        <option value="WARNING">WARNING</option>
+        <option value="ALARM">ALARM</option>
+        <option value="CRITICAL">CRITICAL</option>
+        <option value="HEARTBEAT">HEARTBEAT</option>
+        <option value="RAW_DATA">RAW_DATA</option>
+      </select>
+    </div>
+    <div class="rpt-fg">
+      <label class="rpt-label">Onay Durumu</label>
+      <select class="rpt-sel" id="rpt-ack">
+        <option value="">Tümü</option>
+        <option value="false">Onaysız</option>
+        <option value="true">Onaylı</option>
+      </select>
+    </div>
+    <div class="rpt-fg">
+      <label class="rpt-label">Limit</label>
+      <select class="rpt-sel" id="rpt-limit">
+        <option value="100">Son 100</option>
+        <option value="250">Son 250</option>
+        <option value="500" selected>Son 500</option>
+        <option value="1000">Son 1000</option>
+      </select>
+    </div>
     <div class="rpt-actions">
-      <button class="btn primary" onclick="fetchReport()">🔍 Raporu Getir</button>
+      <button class="btn" onclick="fetchRecentReport()">Son 100 Kayıt</button>
+      <button class="btn primary" onclick="fetchReport()">🔍 Filtreli Getir</button>
       <button class="btn success" id="btn-pdf" onclick="exportPDF()" disabled>⬇ PDF İndir</button>
     </div>
   </div>
 
-  <div class="rpt-summary" id="rpt-summary" style="display:none;">
-    <div class="stat"><span class="stat-label">Toplam Kayıt</span><span class="stat-value v-blue"   id="rs-total">0</span></div>
-    <div class="stat"><span class="stat-label">Info</span>         <span class="stat-value v-green"  id="rs-info">0</span></div>
-    <div class="stat"><span class="stat-label">Warning</span>      <span class="stat-value v-orange" id="rs-warn">0</span></div>
-    <div class="stat"><span class="stat-label">Alarm</span>        <span class="stat-value v-red"    id="rs-alarm">0</span></div>
-    <div class="stat"><span class="stat-label">Critical</span>     <span class="stat-value v-red"    id="rs-crit">0</span></div>
-    <div class="stat"><span class="stat-label">Onaylanmamış</span><span class="stat-value v-orange" id="rs-unack">0</span></div>
+  <div class="rpt-summary" id="rpt-summary" style="display:none">
+    <div class="stat"><span class="stat-label">Toplam</span>    <span class="stat-value v-blue"   id="rs-total">0</span></div>
+    <div class="stat"><span class="stat-label">Info</span>      <span class="stat-value v-green"  id="rs-info">0</span></div>
+    <div class="stat"><span class="stat-label">Warning</span>   <span class="stat-value v-yellow" id="rs-warn">0</span></div>
+    <div class="stat"><span class="stat-label">Alarm</span>     <span class="stat-value v-red"    id="rs-alarm">0</span></div>
+    <div class="stat"><span class="stat-label">Critical</span>  <span class="stat-value v-red"    id="rs-crit">0</span></div>
+    <div class="stat"><span class="stat-label">Onaysız</span>   <span class="stat-value v-yellow" id="rs-unack">0</span></div>
   </div>
 
   <div class="rpt-result" id="rpt-result">
-    <div class="rpt-empty">Filtre seçip "Raporu Getir" butonuna tıklayın.</div>
+    <div class="rpt-empty">Filtre seçip "Filtreli Getir" ya da "Son 100 Kayıt" butonuna tıklayın.</div>
   </div>
 </div>
 
 <script>
 'use strict';
 
-// ── GLOBALS ──────────────────────────────────────────────────────────────
-const TYPE_CSS  = {DATA:'b-data',WARNING:'b-warning',ALARM:'b-alarm',CRITICAL:'b-critical',HEARTBEAT:'b-heartbeat',INFO:'b-info'};
-const ROW_CSS   = {WARNING:'row-warning',ALARM:'row-alarm',CRITICAL:'row-critical',HEARTBEAT:'row-heartbeat'};
-const TYPE_NAMES= {0x01:'DATA',0x02:'WARNING',0x03:'ALARM',0x04:'CRITICAL',0x05:'HEARTBEAT'};
+// ── THEME ─────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('fsignal-theme', isDark ? 'light' : 'dark');
+}
+(function initTheme() {
+  const saved = localStorage.getItem('fsignal-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.getElementById('theme-btn').textContent = saved === 'dark' ? '☀️' : '🌙';
+})();
 
-let autoScroll  = true;
+// ── GLOBALS ───────────────────────────────────────────────────────────────
+const SEV_CSS  = {INFO:'b-info',DATA:'b-data',WARNING:'b-warning',ALARM:'b-alarm',CRITICAL:'b-critical',HEARTBEAT:'b-heartbeat'};
+const ROW_CSS  = {WARNING:'row-warning',ALARM:'row-alarm',CRITICAL:'row-critical',HEARTBEAT:'row-heartbeat'};
+
+let autoScroll = true;
 let totalPkt=0, totalBytes=0, totalAlarm=0, totalWarn=0;
 const activeSect = new Set();
-let fltType='', fltSect='', fltHex='';
+let fltSev='', fltType='', fltSect='', fltHex='';
 
-// ── TAB ──────────────────────────────────────────────────────────────────
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── TAB ───────────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -329,40 +480,30 @@ function switchTab(name) {
   if (name==='report')   initReportTab();
 }
 
-// ── PACKET PARSER ────────────────────────────────────────────────────────
-function parsePacket(hexStr) {
-  if (!hexStr) return null;
-  const b = hexStr.trim().split(' ').map(h=>parseInt(h,16));
-  if (b.length<11||b[0]!==0xFA||b[1]!==0x51) return null;
-  const typeName  = TYPE_NAMES[b[2]]||'UNKNOWN';
-  const seq       = ((b[5]<<24)|(b[6]<<16)|(b[7]<<8)|b[8])>>>0;
-  const dataLen   = b[9];
-  const dataBytes = b.slice(10, 10+dataLen);
-  const ascii     = dataBytes.map(x=>(x>=32&&x<127)?String.fromCharCode(x):'.').join('');
-  return {typeName, seq, dataLen, ascii};
-}
-
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// ── MONITOR ──────────────────────────────────────────────────────────────
+// ── SSE ───────────────────────────────────────────────────────────────────
 function connect() {
   const es = new EventSource('/api/stream');
-  es.onmessage = e => {
-    const ev = JSON.parse(e.data);
-    if (ev.type==='DATA') addLiveRow(ev);
-    else if (ev.type==='CONNECTED'||ev.type==='DISCONNECTED') patchSectionCards();
+  es.onmessage = ev => {
+    try {
+      const d = JSON.parse(ev.data);
+      if (d.type==='DATA') addLiveRow(d);
+      else if (d.type==='CONNECTED'||d.type==='DISCONNECTED') refreshSectionDots();
+    } catch {}
   };
-  es.onopen  = ()=>{ document.getElementById('dot').className='status-dot connected'; document.getElementById('status-label').textContent='SSE Bağlı'; };
-  es.onerror = ()=>{
+  es.onopen  = () => {
+    document.getElementById('dot').className='status-dot connected';
+    document.getElementById('status-label').textContent='SSE Bağlı';
+  };
+  es.onerror = () => {
     document.getElementById('dot').className='status-dot error';
-    document.getElementById('status-label').textContent='Bağlantı kesildi...';
-    es.close(); setTimeout(connect,3000);
+    document.getElementById('status-label').textContent='Yeniden bağlanıyor...';
+    es.close(); setTimeout(connect, 3000);
   };
 }
 
+// ── MONITOR INITIAL LOAD ──────────────────────────────────────────────────
 async function loadRecentFromDB() {
   try {
-    // Also load sections for name lookup
     const [evRes, secRes] = await Promise.all([
       fetch('/api/events/recent?limit=200'),
       fetch('/api/sections')
@@ -370,21 +511,21 @@ async function loadRecentFromDB() {
     const events   = await evRes.json();
     const sections = await secRes.json();
 
-    // sourceAddr → sectionName map
+    // sourceAddr → name map
     const addrMap = {};
     sections.forEach(s => { addrMap[s.host+':'+s.port] = s.name; });
 
-    // Populate section filter dropdown
-    const fltSectEl = document.getElementById('flt-sect');
+    // populate monitor section filter
+    const fltEl = document.getElementById('flt-sect');
     sections.forEach(s => {
-      if (!fltSectEl.querySelector(`option[value="${esc(s.name)}"]`)) {
-        const opt = document.createElement('option');
-        opt.value = s.name; opt.textContent = s.name;
-        fltSectEl.appendChild(opt);
+      if (!fltEl.querySelector(`option[value="${esc(s.name)}"]`)) {
+        const o = document.createElement('option');
+        o.value = s.name; o.textContent = s.name;
+        fltEl.appendChild(o);
       }
     });
 
-    // Add DB events (reversed so oldest first)
+    // add DB rows (oldest first)
     [...events].reverse().forEach(e => addDbRow(e, addrMap));
     document.getElementById('st-db').textContent = events.length + ' kayıt';
   } catch(err) {
@@ -393,79 +534,103 @@ async function loadRecentFromDB() {
   }
 }
 
+// ── LIVE ROW ──────────────────────────────────────────────────────────────
 function addLiveRow(ev) {
-  totalPkt++; totalBytes+=ev.byteCount;
-  activeSect.add(ev.sectionName||ev.sectionId);
-  const pkt = parsePacket(ev.hex||'');
-  const typeName = pkt?pkt.typeName:'RAW';
-  const seq      = pkt?pkt.seq:'—';
-  const dataDisp = pkt?(pkt.ascii||'—'):(ev.ascii||'—');
-  if (typeName==='ALARM'||typeName==='CRITICAL') totalAlarm++;
-  if (typeName==='WARNING') totalWarn++;
+  totalPkt++; totalBytes += ev.byteCount;
+  activeSect.add(ev.sectionName || ev.sectionId);
+
+  const msgType  = ev.packetType || 'RAW';
+  const severity = ev.severity   || 'INFO';
+  const seq      = ev.sequence   != null ? ev.sequence : '—';
+  const srcId    = ev.srcId      != null ? ev.srcId    : '—';
+  const code     = ev.eventCode  != null ? '0x' + ev.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+  const dataDisp = ev.ascii || '—';
+
+  if (severity==='ALARM'||severity==='CRITICAL') totalAlarm++;
+  if (severity==='WARNING') totalWarn++;
   updateStats();
+
   appendRow({
     isLive:true,
     time: ev.timestamp,
     section: ev.sectionName||'',
     addr: (ev.remoteAddr||'').replace('/',''),
-    typeName, seq,
+    severity, msgType, seq, srcId, code,
     bytes: ev.byteCount,
     hex: ev.hex||'',
     data: dataDisp,
-    severity: ev.type
+    acknowledged: false,
+    id: null
   });
 }
 
+// ── DB ROW ────────────────────────────────────────────────────────────────
 function addDbRow(e, addrMap) {
-  const hex = e.description||'';
-  const pkt = parsePacket(hex);
-  const typeName = pkt?pkt.typeName:(e.severity||'INFO');
-  const seq      = pkt?pkt.seq:'—';
-  const ascii    = pkt?pkt.ascii:'';
-  const byteCount = hex ? Math.floor(hex.trim().split(' ').length) : 0;
-  const sectionName = addrMap[e.sourceAddr]||e.sourceAddr||'';
-  const timeStr = e.eventTime ? e.eventTime.substring(11,23) : '—';
+  const msgType  = e.messageType || 'RAW_DATA';
+  const severity = e.severity    || 'INFO';
+  const seq      = e.sequence    != null ? e.sequence   : '—';
+  const srcId    = e.sourceId    != null ? e.sourceId   : '—';
+  const code     = e.eventCode   != null ? '0x' + e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+  const hex      = e.description || '';
+  const timeStr  = e.eventTime   ? e.eventTime.replace('T',' ').substring(0,19) : '—';
+  const sectionName = addrMap[e.sourceAddr] || e.sourceAddr || '';
+  const byteCount   = hex ? Math.floor(hex.trim().split(' ').length) : 0;
+
   appendRow({
     isLive:false,
     time: timeStr,
     section: sectionName,
     addr: e.sourceAddr||'',
-    typeName, seq,
+    severity, msgType, seq, srcId, code,
     bytes: byteCount,
-    hex,
-    data: ascii||'',
-    severity: e.severity
+    hex, data: '',
+    acknowledged: e.acknowledged,
+    id: e.id
   });
 }
 
+// ── APPEND ROW ────────────────────────────────────────────────────────────
 function appendRow(r) {
   showTable();
-  const typeCss = TYPE_CSS[r.typeName]||'b-raw';
-  const rowCls  = (ROW_CSS[r.typeName]||'') + (r.isLive?' is-live':' row-db');
+  const sevCss  = SEV_CSS[r.severity]  || 'b-raw';
+  const typeCss = SEV_CSS[r.msgType]   || 'b-raw';
+  const rowCls  = (ROW_CSS[r.severity]||ROW_CSS[r.msgType]||'') + (r.isLive?' is-live':' row-db');
   const srcBadge= r.isLive
     ? '<span class="badge b-live">LIVE</span>'
     : '<span class="badge b-db">DB</span>';
+  const ackBadge = r.acknowledged
+    ? '<span class="badge b-ack">✓</span>'
+    : '<span class="badge b-unack">—</span>';
+  const hexShort = r.hex.length>60 ? r.hex.substring(0,60)+'…' : r.hex;
+
   const tr = document.createElement('tr');
   tr.className = rowCls.trim();
-  tr.dataset.type    = r.typeName;
-  tr.dataset.section = (r.section||'').toLowerCase();
-  tr.dataset.hex     = (r.hex||'').toLowerCase();
-  tr.dataset.addr    = (r.addr||'').toLowerCase();
+  tr.dataset.severity = r.severity.toLowerCase();
+  tr.dataset.type     = (r.msgType||'').toLowerCase();
+  tr.dataset.section  = (r.section||'').toLowerCase();
+  tr.dataset.addr     = (r.addr||'').toLowerCase();
+  tr.dataset.hex      = (r.hex||'').toLowerCase();
+  tr.dataset.seq      = String(r.seq||'');
+  if (r.id) tr.dataset.id = r.id;
+
   tr.innerHTML = `
     <td>${srcBadge}</td>
     <td class="c-time">${esc(r.time)}</td>
     <td class="c-name">${esc(r.section)}</td>
     <td class="c-addr">${esc(r.addr)}</td>
-    <td><span class="badge ${typeCss}">${r.typeName}</span></td>
-    <td class="c-seq">${r.seq}</td>
-    <td class="c-byte">${r.bytes}</td>
-    <td class="c-hex">${esc(r.hex)}</td>
-    <td class="c-data">${esc(r.data)}</td>
-  `;
+    <td><span class="badge ${sevCss}">${esc(r.severity)}</span></td>
+    <td><span class="badge ${typeCss}">${esc(r.msgType)}</span></td>
+    <td class="c-num">${esc(String(r.seq))}</td>
+    <td class="c-num">${esc(String(r.srcId))}</td>
+    <td class="c-code">${esc(r.code)}</td>
+    <td class="c-num">${r.bytes}</td>
+    <td class="c-hex">${esc(hexShort)}</td>
+    <td class="c-ack">${ackBadge}</td>`;
+
   if (!rowMatchesFilter(tr)) tr.style.display='none';
   document.getElementById('m-tbody').appendChild(tr);
   updateCount();
-  if (autoScroll&&r.isLive) {
+  if (autoScroll && r.isLive) {
     const w = document.getElementById('log-wrap');
     w.scrollTop = w.scrollHeight;
   }
@@ -483,16 +648,22 @@ function updateStats() {
   document.getElementById('st-alarm').textContent   = totalAlarm;
   document.getElementById('st-warn').textContent    = totalWarn;
   document.getElementById('st-last').textContent    = new Date().toTimeString().substring(0,8);
+  document.getElementById('hdr-alarm').textContent  = '⚠ ALARM: ' + totalAlarm;
+  document.getElementById('hdr-warn').textContent   = '⚡ WARN: '  + totalWarn;
 }
 
 function rowMatchesFilter(tr) {
-  if (fltType && tr.dataset.type!==fltType) return false;
-  if (fltSect && !tr.dataset.section.includes(fltSect.toLowerCase())) return false;
-  if (fltHex  && !tr.dataset.hex.includes(fltHex) && !tr.dataset.addr.includes(fltHex)) return false;
+  if (fltSev  && tr.dataset.severity !== fltSev.toLowerCase())                              return false;
+  if (fltType && tr.dataset.type     !== fltType.toLowerCase())                             return false;
+  if (fltSect && !tr.dataset.section.includes(fltSect.toLowerCase()))                       return false;
+  if (fltHex  && !tr.dataset.hex.includes(fltHex)
+               && !tr.dataset.addr.includes(fltHex)
+               && !tr.dataset.seq.includes(fltHex))                                         return false;
   return true;
 }
 
 function applyFilter() {
+  fltSev  = document.getElementById('flt-sev').value;
   fltType = document.getElementById('flt-type').value;
   fltSect = document.getElementById('flt-sect').value;
   fltHex  = document.getElementById('flt-hex').value.toLowerCase().trim();
@@ -505,13 +676,14 @@ function applyFilter() {
 function updateCount() {
   const total   = document.getElementById('m-tbody').querySelectorAll('tr').length;
   const visible = document.getElementById('m-tbody').querySelectorAll('tr:not([style*="display: none"])').length;
+  const filter  = fltSev||fltType||fltSect||fltHex;
   document.getElementById('vis-count').textContent =
-    (fltType||fltSect||fltHex)?`${visible} / ${total} kayıt`:`${total} kayıt`;
+    filter ? `${visible} / ${total} kayıt` : `${total} kayıt`;
 }
 
 function toggleAS() {
-  autoScroll=!autoScroll;
-  document.getElementById('btn-as').classList.toggle('active',autoScroll);
+  autoScroll = !autoScroll;
+  document.getElementById('btn-as').classList.toggle('active', autoScroll);
 }
 
 function clearLog() {
@@ -521,12 +693,15 @@ function clearLog() {
   totalPkt=totalBytes=totalAlarm=totalWarn=0;
   activeSect.clear();
   ['st-packets','st-bytes','st-alarm','st-warn'].forEach(id=>document.getElementById(id).textContent='0');
-  document.getElementById('st-sect').textContent='—';
-  document.getElementById('st-last').textContent='—';
+  ['st-sect','st-last'].forEach(id=>document.getElementById(id).textContent='—');
   updateCount();
 }
 
-// ── SECTIONS CRUD ────────────────────────────────────────────────────────
+function refreshSectionDots() {
+  if (document.getElementById('view-sections').classList.contains('active')) loadSections();
+}
+
+// ── SECTIONS ──────────────────────────────────────────────────────────────
 let sections=[], editingId=null;
 
 async function loadSections() {
@@ -535,23 +710,22 @@ async function loadSections() {
     sections = await r.json();
     smartRender();
   } catch(e) {
-    document.getElementById('section-list').innerHTML=`<div class="sec-empty" style="color:#f85149">Yüklenemedi: ${e.message}</div>`;
+    document.getElementById('section-list').innerHTML=
+      `<div class="sec-empty" style="color:var(--red)">Yüklenemedi: ${e.message}</div>`;
   }
 }
 
 function smartRender() {
   const list = document.getElementById('section-list');
   const total=sections.length, conn=sections.filter(s=>s.connected).length, en=sections.filter(s=>s.enabled).length;
-  document.getElementById('sec-summary').textContent=`${total} section · ${en} aktif · ${conn} bağlı`;
+  document.getElementById('sec-summary').textContent=
+    `${total} section · ${en} aktif · ${conn} bağlı`;
   if (!total){ list.innerHTML='<div class="sec-empty">Henüz section eklenmedi.</div>'; return; }
   list.querySelector('.sec-empty')?.remove();
   const domIds=new Set([...list.querySelectorAll('.sec-card')].map(el=>Number(el.dataset.sid)));
   const newIds=new Set(sections.map(s=>s.id));
   domIds.forEach(id=>{ if(!newIds.has(id)) document.getElementById('card-'+id)?.remove(); });
-  sections.forEach(s=>{
-    const ex=document.getElementById('card-'+s.id);
-    ex ? patchCard(ex,s) : list.appendChild(buildCard(s));
-  });
+  sections.forEach(s=>{ const ex=document.getElementById('card-'+s.id); ex?patchCard(ex,s):list.appendChild(buildCard(s)); });
 }
 
 function cardState(s) {
@@ -559,14 +733,12 @@ function cardState(s) {
   if (s.connected)  return {cls:'c-conn', dot:'on', badge:'sb-conn', txt:'● Bağlı'};
   return                   {cls:'c-disc', dot:'off',badge:'sb-disc', txt:'○ Bağlantı Yok'};
 }
-
 function patchCard(el,s) {
   const {cls,dot,badge,txt}=cardState(s);
   el.classList.remove('c-conn','c-disc','c-dis'); el.classList.add(cls);
   el.querySelector('.sec-dot').className='sec-dot '+dot;
   const b=el.querySelector('.sec-badge'); b.className='sec-badge '+badge; b.textContent=txt;
 }
-
 function buildCard(s) {
   const {cls,dot,badge,txt}=cardState(s);
   const desc=s.description?`<div class="sec-desc">${esc(s.description)}</div>`:'';
@@ -576,19 +748,14 @@ function buildCard(s) {
     <div class="sec-dot ${dot}"></div>
     <div class="sec-info">
       <div class="sec-name">${esc(s.name)}</div>
-      <div class="sec-addr">${esc(s.host)}:${s.port}</div>
-      ${desc}
+      <div class="sec-addr">${esc(s.host)}:${s.port}</div>${desc}
     </div>
     <span class="sec-badge ${badge}">${txt}</span>
     <div class="sec-actions">
       <button class="btn sm" onclick="openEditForm(${s.id})">Düzenle</button>
-      <button class="btn sm danger" onclick="deleteSection(${s.id},'${esc(s.name)}')">Sil</button>
+      <button class="btn sm" style="color:var(--red)" onclick="deleteSection(${s.id},'${esc(s.name)}')">Sil</button>
     </div>`;
   return d;
-}
-
-function patchSectionCards() {
-  if (document.getElementById('view-sections').classList.contains('active')) loadSections();
 }
 
 function openAddForm() {
@@ -601,7 +768,6 @@ function openAddForm() {
   document.getElementById('sec-form').classList.add('open');
   document.getElementById('form-name').focus();
 }
-
 function openEditForm(id) {
   const s=sections.find(x=>x.id===id); if(!s) return;
   editingId=id;
@@ -616,9 +782,7 @@ function openEditForm(id) {
   document.getElementById('sec-form').classList.add('open');
   document.getElementById('sec-form').scrollIntoView({behavior:'smooth',block:'start'});
 }
-
 function closeForm() { document.getElementById('sec-form').classList.remove('open'); editingId=null; }
-
 async function submitForm() {
   const name=document.getElementById('form-name').value.trim();
   const host=document.getElementById('form-host').value.trim();
@@ -638,7 +802,6 @@ async function submitForm() {
     closeForm(); await loadSections();
   } catch(e){showFE('İstek hatası: '+e.message);}
 }
-
 async function deleteSection(id,name) {
   if(!confirm(`"${name}" silinsin mi?`)) return;
   await fetch(`/api/sections/${id}`,{method:'DELETE'});
@@ -646,101 +809,133 @@ async function deleteSection(id,name) {
 }
 function showFE(msg){const e=document.getElementById('form-error');e.textContent=msg;e.style.display='block';}
 
-// ── REPORT TAB ───────────────────────────────────────────────────────────
+// ── REPORT ────────────────────────────────────────────────────────────────
 let reportData = [];
+let reportParams = {};
 
 function initReportTab() {
-  // Set default dates: last 7 days
   const today = new Date();
   const week  = new Date(today); week.setDate(week.getDate()-7);
   const fmt   = d => d.toISOString().substring(0,10);
-  if (!document.getElementById('rpt-from').value) document.getElementById('rpt-from').value=fmt(week);
-  if (!document.getElementById('rpt-to').value)   document.getElementById('rpt-to').value  =fmt(today);
+  if (!document.getElementById('rpt-from').value) document.getElementById('rpt-from').value = fmt(week);
+  if (!document.getElementById('rpt-to').value)   document.getElementById('rpt-to').value   = fmt(today);
 
-  // Populate section dropdown from sections list
   fetch('/api/sections').then(r=>r.json()).then(secs => {
     const el=document.getElementById('rpt-sect');
     secs.forEach(s => {
       if (!el.querySelector(`option[value="${esc(s.host+':'+s.port)}"]`)) {
-        const opt=document.createElement('option');
-        opt.value=s.host+':'+s.port; opt.textContent=s.name+' ('+s.host+':'+s.port+')';
-        el.appendChild(opt);
+        const o=document.createElement('option');
+        o.value=s.host+':'+s.port; o.textContent=s.name+' ('+s.host+':'+s.port+')';
+        el.appendChild(o);
       }
     });
-  });
+  }).catch(()=>{});
+
+  // Auto-load recent 100 on first switch
+  if (reportData.length === 0) fetchRecentReport();
+}
+
+async function fetchRecentReport() {
+  reportParams = { limit: 100 };
+  await doFetch('/api/events/report?limit=100');
 }
 
 async function fetchReport() {
-  const from  = document.getElementById('rpt-from').value;
-  const to    = document.getElementById('rpt-to').value;
-  const sev   = document.getElementById('rpt-sev').value;
-  const sAddr = document.getElementById('rpt-sect').value;
+  const from    = document.getElementById('rpt-from').value;
+  const to      = document.getElementById('rpt-to').value;
+  const sev     = document.getElementById('rpt-sev').value;
+  const sAddr   = document.getElementById('rpt-sect').value;
+  const msgType = document.getElementById('rpt-msgtype').value;
+  const ack     = document.getElementById('rpt-ack').value;
+  const limit   = document.getElementById('rpt-limit').value;
 
-  const params = new URLSearchParams();
-  if (from)  params.set('from', from);
-  if (to)    params.set('to', to);
-  if (sev)   params.set('severity', sev);
-  if (sAddr) params.set('sourceAddr', sAddr);
+  const p = new URLSearchParams();
+  if (from)    p.set('from', from);
+  if (to)      p.set('to', to);
+  if (sev)     p.set('severity', sev);
+  if (sAddr)   p.set('sourceAddr', sAddr);
+  if (msgType) p.set('messageType', msgType);
+  if (ack)     p.set('acknowledged', ack);
+  if (limit)   p.set('limit', limit);
 
-  document.getElementById('rpt-result').innerHTML='<div class="rpt-loading">⏳ Veriler yükleniyor...</div>';
+  reportParams = { from, to, sev, sAddr, msgType, ack, limit };
+  await doFetch('/api/events/report?' + p);
+}
+
+async function doFetch(url) {
+  document.getElementById('rpt-result').innerHTML =
+    '<div class="rpt-loading"><span class="spinner">⏳</span> Veriler yükleniyor...</div>';
   document.getElementById('rpt-summary').style.display='none';
   document.getElementById('btn-pdf').disabled=true;
 
   try {
-    const r = await fetch('/api/events/report?'+params);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     reportData = await r.json();
     renderReportTable(reportData);
   } catch(e) {
-    document.getElementById('rpt-result').innerHTML=`<div class="rpt-empty" style="color:#f85149">Hata: ${e.message}</div>`;
+    document.getElementById('rpt-result').innerHTML =
+      `<div class="rpt-empty" style="color:var(--red)">Hata: ${e.message}</div>`;
   }
 }
 
 function renderReportTable(data) {
   if (!data.length) {
-    document.getElementById('rpt-result').innerHTML='<div class="rpt-empty">Seçilen kriterlere uygun kayıt bulunamadı.</div>';
+    document.getElementById('rpt-result').innerHTML =
+      '<div class="rpt-empty">Seçilen kriterlere uygun kayıt bulunamadı.</div>';
     document.getElementById('rpt-summary').style.display='none';
     return;
   }
 
-  const counts={INFO:0,WARNING:0,ALARM:0,CRITICAL:0,unack:0};
-  data.forEach(e=>{
-    counts[e.severity]=(counts[e.severity]||0)+1;
-    if(!e.acknowledged) counts.unack++;
-  });
+  const cnt={INFO:0,WARNING:0,ALARM:0,CRITICAL:0,unack:0};
+  data.forEach(e=>{ cnt[e.severity]=(cnt[e.severity]||0)+1; if(!e.acknowledged) cnt.unack++; });
 
   document.getElementById('rs-total').textContent = data.length;
-  document.getElementById('rs-info').textContent  = counts.INFO||0;
-  document.getElementById('rs-warn').textContent  = counts.WARNING||0;
-  document.getElementById('rs-alarm').textContent = counts.ALARM||0;
-  document.getElementById('rs-crit').textContent  = counts.CRITICAL||0;
-  document.getElementById('rs-unack').textContent = counts.unack;
+  document.getElementById('rs-info').textContent  = cnt.INFO||0;
+  document.getElementById('rs-warn').textContent  = cnt.WARNING||0;
+  document.getElementById('rs-alarm').textContent = cnt.ALARM||0;
+  document.getElementById('rs-crit').textContent  = cnt.CRITICAL||0;
+  document.getElementById('rs-unack').textContent = cnt.unack;
   document.getElementById('rpt-summary').style.display='flex';
 
+  const sevCss = s => ({INFO:'b-info',WARNING:'b-warning',ALARM:'b-alarm',CRITICAL:'b-critical'}[s]||'b-raw');
+
   const rows = data.map((e,i) => {
-    const sev = e.severity||'INFO';
-    const sevCss = {INFO:'b-info',WARNING:'b-warning',ALARM:'b-alarm',CRITICAL:'b-critical'}[sev]||'b-raw';
-    const ack = e.acknowledged ? '✓':'—';
-    const dt  = e.eventTime ? e.eventTime.replace('T',' ').substring(0,19) : '—';
-    const hex = (e.description||'').substring(0,48)+((e.description||'').length>48?'…':'');
-    return `<tr>
-      <td class="c-time" style="color:#555d68">${i+1}</td>
+    const sev  = e.severity||'INFO';
+    const dt   = e.eventTime ? e.eventTime.replace('T',' ').substring(0,19) : '—';
+    const hex  = (e.description||'').length>50 ? e.description.substring(0,50)+'…' : (e.description||'—');
+    const seq  = e.sequence  != null ? e.sequence  : '—';
+    const code = e.eventCode != null ? '0x'+e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+    const ack  = e.acknowledged ? '<span class="badge b-ack">✓ Onaylı</span>' : '<span class="badge b-unack">Bekliyor</span>';
+    let rowStyle='';
+    if(sev==='CRITICAL') rowStyle='background:var(--red-bg)';
+    else if(sev==='ALARM') rowStyle='background:var(--red-bg);opacity:.85';
+    else if(sev==='WARNING') rowStyle='background:var(--yellow-bg)';
+    return `<tr style="${rowStyle}">
+      <td class="c-num" style="color:var(--subtle)">${i+1}</td>
       <td class="c-time">${esc(dt)}</td>
-      <td class="c-addr">${esc(e.sourceAddr||'')}</td>
-      <td><span class="badge ${sevCss}">${sev}</span></td>
+      <td class="c-addr">${esc(e.sourceAddr||'—')}</td>
+      <td><span class="badge ${sevCss(sev)}">${sev}</span></td>
+      <td class="c-data">${esc(e.messageType||'—')}</td>
+      <td class="c-num">${esc(String(seq))}</td>
+      <td class="c-code">${esc(code)}</td>
       <td class="c-hex" style="font-size:10px">${esc(hex)}</td>
-      <td style="text-align:center;color:${e.acknowledged?'#3fb950':'#7d8590'}">${ack}</td>
+      <td>${ack}</td>
     </tr>`;
   }).join('');
 
   document.getElementById('rpt-result').innerHTML=`
     <table>
       <thead><tr>
-        <th style="width:40px;">#</th>
-        <th style="width:160px;">Zaman (UTC)</th>
-        <th style="width:150px;">Kaynak</th>
-        <th style="width:90px;">Önem</th>
-        <th>Hex Verisi</th>
-        <th style="width:50px;text-align:center">Onay</th>
+        <th style="width:36px">#</th>
+        <th style="width:155px">Zaman (UTC)</th>
+        <th style="width:145px">Kaynak</th>
+        <th style="width:80px">Ciddiyet</th>
+        <th style="width:90px">Mesaj Tipi</th>
+        <th style="width:52px">Seq</th>
+        <th style="width:52px">Kod</th>
+        <th>Hex / Açıklama</th>
+        <th style="width:80px;text-align:center">Onay</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
@@ -748,272 +943,45 @@ function renderReportTable(data) {
   document.getElementById('btn-pdf').disabled=false;
 }
 
-// ── PDF EXPORT ────────────────────────────────────────────────────────────
-function exportPDF() {
-  if (!reportData.length) return;
-  const {jsPDF} = window.jspdf;
-  const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
-  const W=210, M=14;
+// ── PDF (server-side) ──────────────────────────────────────────────────────
+async function exportPDF() {
+  const btn = document.getElementById('btn-pdf');
+  btn.disabled = true;
+  btn.textContent = '⏳ Hazırlanıyor...';
 
-  // ── Cover header ──────────────────────────────────────────────────────
-  doc.setFillColor(15,43,84);
-  doc.rect(0,0,W,38,'F');
+  try {
+    const p = new URLSearchParams();
+    const rp = reportParams;
+    if (rp.from)    p.set('from',        rp.from);
+    if (rp.to)      p.set('to',          rp.to);
+    if (rp.sev)     p.set('severity',    rp.sev);
+    if (rp.sAddr)   p.set('sourceAddr',  rp.sAddr);
+    if (rp.msgType) p.set('messageType', rp.msgType);
+    if (rp.ack)     p.set('acknowledged',rp.ack);
+    if (rp.limit)   p.set('limit',       rp.limit);
 
-  doc.setFillColor(26,82,158);
-  doc.rect(0,38,W,5,'F');
+    const resp = await fetch('/api/reports/pdf?' + p);
+    if (!resp.ok) throw new Error('PDF üretim hatası: HTTP ' + resp.status);
 
-  doc.setTextColor(255,255,255);
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(20);
-  doc.text('FSIGNAL', M, 16);
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica','normal');
-  doc.text('Tramway Signalization System', M, 23);
-
-  doc.setFontSize(14);
-  doc.setFont('helvetica','bold');
-  doc.text('SAFETY EVENT REPORT', M, 32);
-
-  // EN50129 badge (right side)
-  doc.setFillColor(26,82,158);
-  doc.roundedRect(W-70,8,60,22,2,2,'F');
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(9);
-  doc.setFont('helvetica','bold');
-  doc.text('EN50129 / SIL2', W-40, 17, {align:'center'});
-  doc.setFontSize(7);
-  doc.setFont('helvetica','normal');
-  doc.text('CERTIFIED SYSTEM', W-40, 23, {align:'center'});
-
-  // ── Report metadata box ───────────────────────────────────────────────
-  let y=50;
-  doc.setFillColor(235,242,250);
-  doc.rect(M, y, W-2*M, 42,'F');
-  doc.setDrawColor(26,82,158);
-  doc.setLineWidth(0.3);
-  doc.rect(M, y, W-2*M, 42,'S');
-
-  doc.setTextColor(26,82,158);
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(9);
-  doc.text('RAPOR BİLGİLERİ', M+4, y+7);
-
-  doc.setTextColor(44,62,80);
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(8);
-
-  const from  = document.getElementById('rpt-from').value||'—';
-  const to    = document.getElementById('rpt-to').value||'—';
-  const sev   = document.getElementById('rpt-sev').value||'Tümü';
-  const sAddr = document.getElementById('rpt-sect').options[document.getElementById('rpt-sect').selectedIndex]?.text||'Tümü';
-  const now   = new Date().toISOString().replace('T',' ').substring(0,19);
-
-  const meta=[
-    ['Oluşturma Tarihi:', now+' UTC'],
-    ['Rapor Dönemi:',     from+' — '+to],
-    ['Section Filtresi:', sAddr],
-    ['Önem Filtresi:',    sev],
-    ['Toplam Kayıt:',     String(reportData.length)+' adet'],
-  ];
-  let my=y+14;
-  meta.forEach(([k,v])=>{
-    doc.setFont('helvetica','bold');   doc.text(k, M+4, my);
-    doc.setFont('helvetica','normal'); doc.text(v, M+52, my);
-    my+=6;
-  });
-
-  // ── Summary statistics ────────────────────────────────────────────────
-  y=100;
-  doc.setTextColor(26,82,158);
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(10);
-  doc.text('ÖZET İSTATİSTİKLER', M, y);
-  doc.setDrawColor(26,82,158);
-  doc.setLineWidth(0.5);
-  doc.line(M, y+2, W-M, y+2);
-
-  const counts={INFO:0,WARNING:0,ALARM:0,CRITICAL:0};
-  reportData.forEach(e=>{ counts[e.severity]=(counts[e.severity]||0)+1; });
-
-  doc.autoTable({
-    startY: y+6,
-    margin: {left:M, right:M},
-    head:[['Önem Seviyesi','Adet','Yüzde (%)']],
-    body:[
-      ['INFO',    counts.INFO||0,    ((counts.INFO||0)/reportData.length*100).toFixed(1)],
-      ['WARNING', counts.WARNING||0, ((counts.WARNING||0)/reportData.length*100).toFixed(1)],
-      ['ALARM',   counts.ALARM||0,   ((counts.ALARM||0)/reportData.length*100).toFixed(1)],
-      ['CRITICAL',counts.CRITICAL||0,((counts.CRITICAL||0)/reportData.length*100).toFixed(1)],
-      ['TOPLAM',  reportData.length, '100.0'],
-    ],
-    styles:{fontSize:8, cellPadding:3, font:'helvetica'},
-    headStyles:{fillColor:[15,43,84], textColor:255, fontStyle:'bold', fontSize:8},
-    bodyStyles:{textColor:[44,62,80]},
-    alternateRowStyles:{fillColor:[245,248,252]},
-    columnStyles:{1:{halign:'right'},2:{halign:'right'}},
-    willDrawCell: (data)=>{
-      if (data.section==='body'&&data.row.index<4) {
-        const sev=['INFO','WARNING','ALARM','CRITICAL'][data.row.index];
-        if (sev==='ALARM'||sev==='CRITICAL') { doc.setFillColor(253,235,235); }
-        else if (sev==='WARNING')             { doc.setFillColor(254,248,235); }
-      }
-    }
-  });
-
-  // ── Event table ───────────────────────────────────────────────────────
-  y = doc.lastAutoTable.finalY+10;
-  doc.setTextColor(26,82,158);
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(10);
-  doc.text('OLAY KAYITLARI', M, y);
-  doc.setLineWidth(0.5);
-  doc.line(M, y+2, W-M, y+2);
-
-  const tableBody = reportData.map((e,i)=>{
-    const dt  = e.eventTime ? e.eventTime.replace('T',' ').substring(0,19) : '—';
-    const hex = (e.description||'').substring(0,36)+((e.description||'').length>36?'…':'');
-    return [i+1, dt, e.sourceAddr||'—', e.severity||'—', hex, e.acknowledged?'Evet':'Hayir'];
-  });
-
-  doc.autoTable({
-    startY: y+6,
-    margin: {left:M, right:M},
-    head:[['#','Zaman (UTC)','Kaynak','Onem','Hex Verisi','Onay']],
-    body: tableBody,
-    styles:{fontSize:7, cellPadding:2.5, font:'helvetica', overflow:'ellipsize'},
-    headStyles:{fillColor:[15,43,84], textColor:255, fontStyle:'bold', fontSize:7.5},
-    bodyStyles:{textColor:[44,62,80]},
-    alternateRowStyles:{fillColor:[248,250,253]},
-    columnStyles:{0:{halign:'right',cellWidth:10},1:{cellWidth:38},2:{cellWidth:38},3:{cellWidth:20},4:{cellWidth:60},5:{halign:'center',cellWidth:16}},
-    willDrawCell: (data)=>{
-      if (data.section==='body') {
-        const sev=data.row.raw[3];
-        if (sev==='CRITICAL') doc.setFillColor(253,235,235);
-        else if (sev==='ALARM') doc.setFillColor(255,240,240);
-        else if (sev==='WARNING') doc.setFillColor(255,251,235);
-      }
-    },
-    didDrawPage: (data)=>{
-      // Page header on continuation pages
-      if (data.pageNumber>1) {
-        doc.setFillColor(15,43,84);
-        doc.rect(0,0,W,12,'F');
-        doc.setTextColor(255,255,255);
-        doc.setFont('helvetica','bold');
-        doc.setFontSize(8);
-        doc.text('FSIGNAL — SAFETY EVENT REPORT (EN50129/SIL2)', M, 8);
-      }
-      // Page footer
-      const pg=data.pageNumber;
-      const total=doc.internal.getNumberOfPages();
-      doc.setTextColor(130,130,130);
-      doc.setFont('helvetica','normal');
-      doc.setFontSize(7);
-      doc.text('FSIGNAL Tramway Signalization System | GIZLI / CONFIDENTIAL', M, 292);
-      doc.text(`Sayfa ${pg} / ${total}`, W-M, 292, {align:'right'});
-      doc.setDrawColor(200,200,200);
-      doc.setLineWidth(0.2);
-      doc.line(M,289,W-M,289);
-    }
-  });
-
-  // ── Compliance statement ──────────────────────────────────────────────
-  doc.addPage();
-  doc.setFillColor(15,43,84);
-  doc.rect(0,0,W,12,'F');
-  doc.setTextColor(255,255,255);
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(8);
-  doc.text('FSIGNAL — SAFETY EVENT REPORT (EN50129/SIL2)', M, 8);
-
-  y=24;
-  doc.setTextColor(26,82,158);
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(11);
-  doc.text('UYGUNLUK BEYANI / COMPLIANCE STATEMENT', M, y);
-  doc.setLineWidth(0.5);
-  doc.line(M, y+2, W-M, y+2);
-
-  doc.setTextColor(44,62,80);
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(8);
-  const compliance=[
-    'Bu rapor, EN50129:2018 Demiryolu Uygulamaları - İletişim, Sinyalizasyon ve İşleme Sistemleri',
-    'standardına uygun olarak FSIGNAL Tramvay Sinyalizasyon Sistemi tarafından otomatik olarak',
-    'üretilmiştir. Sistem SIL2 (Safety Integrity Level 2) güvenlik bütünlüğü seviyesinde',
-    'sertifikalandırılmıştır.',
-    '',
-    'This report has been automatically generated by the FSIGNAL Tramway Signalization System',
-    'in compliance with EN50129:2018 Railway Applications - Communication, Signalling and',
-    'Processing Systems standard. The system is certified at SIL2 (Safety Integrity Level 2).',
-    '',
-    'İlgili Standartlar / Applicable Standards:',
-    '  • EN50129:2018 — Railway applications: Safety related electronic systems',
-    '  • EN50126:2017 — Railway applications: Reliability, Availability, Maintainability, Safety',
-    '  • EN50159:2010 — Railway applications: Safety-related communication',
-    '  • IEC62280:2014 — Railway applications: Communication security',
-  ];
-  let cy=y+10;
-  compliance.forEach(line=>{ doc.text(line, M, cy); cy+=5; });
-
-  // ── Standards box ─────────────────────────────────────────────────────
-  cy+=4;
-  doc.setFillColor(235,242,250);
-  doc.rect(M, cy, W-2*M, 20, 'F');
-  doc.setDrawColor(26,82,158); doc.setLineWidth(0.3);
-  doc.rect(M, cy, W-2*M, 20, 'S');
-  doc.setTextColor(26,82,158); doc.setFont('helvetica','bold'); doc.setFontSize(8);
-  doc.text('ÖNEMLI NOT / IMPORTANT NOTE', M+4, cy+7);
-  doc.setTextColor(44,62,80); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
-  doc.text('Bu rapordaki veriler yetkili personel tarafından gözden geçirilmeli ve onaylanmalıdır.', M+4, cy+13);
-  doc.text('Data in this report must be reviewed and approved by authorized personnel.', M+4, cy+18);
-
-  // ── Signature block ───────────────────────────────────────────────────
-  cy+=32;
-  doc.setTextColor(26,82,158); doc.setFont('helvetica','bold'); doc.setFontSize(10);
-  doc.text('İMZA BLOĞU / SIGNATURE BLOCK', M, cy);
-  doc.setLineWidth(0.5); doc.line(M, cy+2, W-M, cy+2);
-
-  const sigCols=[M, M+62, M+124];
-  const sigLabels=['Hazırlayan / Prepared by','Kontrol Eden / Reviewed by','Onaylayan / Authorized by'];
-  cy+=12;
-  sigLabels.forEach((lbl,i)=>{
-    const x=sigCols[i];
-    doc.setFillColor(248,250,253);
-    doc.rect(x, cy, 55, 36, 'F');
-    doc.setDrawColor(180,180,180); doc.setLineWidth(0.2);
-    doc.rect(x, cy, 55, 36, 'S');
-    doc.setTextColor(26,82,158); doc.setFont('helvetica','bold'); doc.setFontSize(7);
-    doc.text(lbl, x+2, cy+6);
-    doc.setTextColor(150,150,150); doc.setFont('helvetica','normal'); doc.setFontSize(7);
-    doc.text('Ad / Name:', x+2, cy+14);
-    doc.text('İmza / Sign:', x+2, cy+22);
-    doc.text('Tarih / Date:', x+2, cy+30);
-    doc.setDrawColor(180,180,180); doc.setLineWidth(0.15);
-    doc.line(x+22, cy+15, x+52, cy+15);
-    doc.line(x+24, cy+23, x+52, cy+23);
-    doc.line(x+26, cy+31, x+52, cy+31);
-  });
-
-  // Footer on last page
-  doc.setTextColor(130,130,130); doc.setFont('helvetica','normal'); doc.setFontSize(7);
-  doc.text('FSIGNAL Tramway Signalization System | GIZLI / CONFIDENTIAL', M, 292);
-  const pg=doc.internal.getNumberOfPages();
-  doc.text(`Sayfa ${pg} / ${pg}`, W-M, 292, {align:'right'});
-  doc.setDrawColor(200,200,200); doc.setLineWidth(0.2);
-  doc.line(M,289,W-M,289);
-
-  // Save
-  const fname=`FSIGNAL_SER_${from}_${to}_${new Date().toISOString().substring(0,10)}.pdf`
-    .replace(/[^a-zA-Z0-9_.-]/g,'_');
-  doc.save(fname);
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'FSIGNAL_REPORT_' + new Date().toISOString().substring(0,10) + '.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    alert('PDF indirme hatası: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⬇ PDF İndir';
+  }
 }
 
 // ── AUTO-REFRESH ──────────────────────────────────────────────────────────
-setInterval(()=>{
+setInterval(() => {
   if (document.getElementById('view-sections').classList.contains('active')) loadSections();
-},5000);
+}, 5000);
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 (async () => {

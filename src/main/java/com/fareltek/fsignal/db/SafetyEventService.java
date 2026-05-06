@@ -22,7 +22,8 @@ public class SafetyEventService {
 
     public Mono<SafetyEvent> save(String sourceAddr, byte[] rawData, String hex) {
         return repository.save(SafetyEvent.fromRaw(sourceAddr, rawData, hex))
-                .doOnSuccess(e -> log.debug("[DB] Event kaydedildi: {}", e.getId()))
+                .doOnSuccess(e -> log.debug("[DB] Event kaydedildi: {} seq={} type={}",
+                        e.getId(), e.getSequence(), e.getMessageType()))
                 .doOnError(e -> log.error("[DB] Kayit hatasi: {}", e.getMessage()));
     }
 
@@ -39,17 +40,20 @@ public class SafetyEventService {
     }
 
     public Flux<SafetyEvent> getFiltered(OffsetDateTime from, OffsetDateTime to,
-                                          String severity, String sourceAddr) {
+                                          String severity, String sourceAddr,
+                                          String messageType, Boolean acknowledged) {
         Flux<SafetyEvent> base = (from != null && to != null)
                 ? repository.findByEventTimeBetweenOrderByEventTimeDesc(from, to)
                 : repository.findTop500ByOrderByEventTimeDesc();
 
-        if (severity != null && !severity.isBlank()) {
+        if (severity    != null && !severity.isBlank())
             base = base.filter(e -> severity.equalsIgnoreCase(e.getSeverity()));
-        }
-        if (sourceAddr != null && !sourceAddr.isBlank()) {
+        if (sourceAddr  != null && !sourceAddr.isBlank())
             base = base.filter(e -> sourceAddr.equals(e.getSourceAddr()));
-        }
+        if (messageType != null && !messageType.isBlank())
+            base = base.filter(e -> messageType.equalsIgnoreCase(e.getMessageType()));
+        if (acknowledged != null)
+            base = base.filter(e -> acknowledged.equals(e.getAcknowledged()));
         return base;
     }
 
