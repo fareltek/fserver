@@ -132,6 +132,13 @@ public class MonitorController {
         return safetyEventService.acknowledge(id, by).map(this::toDto);
     }
 
+    @PostMapping("/api/events/acknowledge-all")
+    public Mono<Map<String, Object>> acknowledgeAll(
+            @RequestParam(defaultValue = "operator") String by) {
+        return safetyEventService.acknowledgeAllAlarms(by)
+                .map(count -> Map.of("acknowledged", count));
+    }
+
     private Map<String, Object> toDto(SafetyEvent e) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id",             e.getId()          != null ? e.getId().toString()          : null);

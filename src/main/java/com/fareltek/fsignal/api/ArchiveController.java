@@ -9,12 +9,14 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import com.fareltek.fsignal.db.SafetyEvent;
+import com.fareltek.fsignal.db.SafetyEventRepository;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Instant;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -27,6 +29,12 @@ public class ArchiveController {
 
     @Value("${fsignal.archive.path:./archive}")
     private String archivePath;
+
+    private final SafetyEventRepository repository;
+
+    public ArchiveController(SafetyEventRepository repository) {
+        this.repository = repository;
+    }
 
     /** List all files under archive/logs and archive/events */
     @GetMapping("/list")
@@ -53,6 +61,55 @@ public class ArchiveController {
             return ResponseEntity.ok(tailLines(target, n));
         }).subscribeOn(Schedulers.boundedElastic());
     }
+
+    /** On-demand CSV export for any date (default: today) */
+    @GetMapping("/export")
+    public Mono<ResponseEntity<byte[]>> exportDate(
+            @RequestParam(defaultValue = "today") String date) {
+        LocalDate day = "today".equals(date)
+                ? LocalDate.now(ZoneOffset.UTC)
+                : LocalDate.parse(date);
+        OffsetDateTime from = day.atStartOfDay().atOffset(ZoneOffset.UTC);
+        OffsetDateTime to   = "today".equals(date)
+                ? OffsetDateTime.now(ZoneOffset.UTC)
+                : day.atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+
+        return repository.findByEventTimeBetweenOrderByEventTimeDesc(from, to)
+                .collectList()
+                .flatMap(events -> Mono.fromCallable(() -> buildCsvBytes(events))
+                        .subscribeOn(Schedulers.boundedElastic()))
+                .map(bytes -> ResponseEntity.ok()
+                        .header("Content-Disposition",
+                                "attachment; filename=\"events-" + day + ".csv\"")
+                        .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                        .body(bytes));
+    }
+
+    private byte[] buildCsvBytes(java.util.List<SafetyEvent> events) {
+        StringBuilder sb = new StringBuilder(
+                "﻿id,event_time,source_addr,severity,message_type," +
+                "sequence,source_id,event_code,event_data,event_flags," +
+                "description,acknowledged,acknowledged_by\r\n");
+        for (SafetyEvent e : events) {
+            sb.append(nvl(e.getId())).append(',')
+              .append(nvl(e.getEventTime())).append(',')
+              .append(nvl(e.getSourceAddr())).append(',')
+              .append(nvl(e.getSeverity())).append(',')
+              .append(nvl(e.getMessageType())).append(',')
+              .append(nvl(e.getSequence())).append(',')
+              .append(nvl(e.getSourceId())).append(',')
+              .append(nvl(e.getEventCode())).append(',')
+              .append(nvl(e.getEventData())).append(',')
+              .append(nvl(e.getEventFlags())).append(',')
+              .append('"').append(e.getDescription() != null
+                      ? e.getDescription().replace("\"", "\"\"") : "").append('"').append(',')
+              .append(nvl(e.getAcknowledged())).append(',')
+              .append(nvl(e.getAcknowledgedBy())).append("\r\n");
+        }
+        return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private String nvl(Object o) { return o != null ? o.toString() : ""; }
 
     /** Download a file by relative path */
     @GetMapping("/download")

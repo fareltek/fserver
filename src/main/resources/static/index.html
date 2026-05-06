@@ -372,6 +372,7 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
     </select>
     <input class="inp" id="flt-hex" type="text" placeholder="Hex / adres / seq ara..." oninput="applyFilter()" style="width:180px">
     <div class="tsep"></div>
+    <button class="btn" id="btn-ack-all" onclick="acknowledgeAll()" style="color:var(--green);border-color:var(--green)">✓ Tümünü Onayla</button>
     <button class="btn" onclick="clearLog()">Temizle</button>
     <button class="btn" onclick="window.print()" title="Tabloyu yazdır">🖨 Yazdır</button>
     <div class="tright"><span id="vis-count">0 kayıt</span></div>
@@ -513,6 +514,7 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   <div class="arc-toolbar">
     <button class="btn" onclick="loadArchive()">↻ Yenile</button>
     <button class="btn" id="btn-tail" onclick="tailLog()" disabled>📄 Son 200 Log Satırı</button>
+    <button class="btn success" onclick="exportToday()">⬇ Bugünkü Olayları İndir</button>
     <span class="arc-base-path" id="arc-base-path">Yükleniyor...</span>
   </div>
   <div class="arc-body" id="arc-body">
@@ -683,9 +685,10 @@ function appendRow(r) {
   const srcBadge= r.isLive
     ? '<span class="badge b-live">LIVE</span>'
     : '<span class="badge b-db">DB</span>';
-  const ackCell = r.id && !r.acknowledged
+  const isAlarm = r.severity === 'ALARM' || r.severity === 'CRITICAL';
+  const ackCell = r.id && !r.acknowledged && isAlarm
     ? `<button class="btn sm" onclick="ackEvent('${r.id}',this)">Onayla</button>`
-    : (r.acknowledged ? '<span class="badge b-ack">✓</span>' : '<span class="badge b-unack">—</span>');
+    : (r.acknowledged && isAlarm ? '<span class="badge b-ack">✓</span>' : '<span class="badge b-unack" style="opacity:.3">—</span>');
   const descText = r.description || r.hex || '';
   const descShort = descText.length > 70 ? descText.substring(0,70)+'…' : descText;
 
@@ -746,7 +749,6 @@ function updateStats() {
   document.getElementById('st-alarm').textContent   = totalAlarm;
   document.getElementById('st-warn').textContent    = totalWarn;
   document.getElementById('st-last').textContent    = new Date().toTimeString().substring(0,8);
-  document.getElementById('hdr-alarm').textContent  = '⚠ ALARM: ' + totalAlarm;
   document.getElementById('hdr-warn').textContent   = '⚡ WARN: '  + totalWarn;
 }
 
@@ -1115,6 +1117,7 @@ async function ackEvent(id, btn) {
     const r = await fetch(`/api/events/${id}/acknowledge?by=operator`, {method:'POST'});
     if (!r.ok) throw new Error('HTTP ' + r.status);
     btn.closest('tr').querySelector('.c-ack').innerHTML = '<span class="badge b-ack">✓</span>';
+    refreshGlobalStats();
   } catch(e) { btn.disabled = false; alert('ACK hatası: ' + e.message); }
 }
 
@@ -1127,7 +1130,35 @@ async function ackEventReport(id, btn) {
     if (ev) ev.acknowledged = true;
     const el = document.getElementById('rs-unack');
     if (el) el.textContent = Math.max(0, parseInt(el.textContent||'0') - 1);
+    refreshGlobalStats();
   } catch(e) { btn.disabled = false; alert('ACK hatası: ' + e.message); }
+}
+
+async function acknowledgeAll() {
+  if (!confirm('Tüm onaysız ALARM ve KRİTİK olaylar onaylanacak. Devam edilsin mi?')) return;
+  const btn = document.getElementById('btn-ack-all');
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/events/acknowledge-all?by=operator', {method:'POST'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    // update all unacknowledged alarm/critical rows in the table
+    document.querySelectorAll('#m-tbody tr').forEach(tr => {
+      const sev = tr.dataset.severity;
+      if (sev === 'alarm' || sev === 'critical') {
+        const td = tr.querySelector('.c-ack');
+        if (td && td.querySelector('button')) {
+          td.innerHTML = '<span class="badge b-ack">✓</span>';
+        }
+      }
+    });
+    await refreshGlobalStats();
+    alert(`${d.acknowledged} alarm onaylandı.`);
+  } catch(e) {
+    alert('Hata: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── AUDIO ALERTS ──────────────────────────────────────────────────────────
@@ -1139,15 +1170,33 @@ function playAlert(severity) {
   if (audioMuted || !AudioCtxCls) return;
   try {
     if (!audioCtx) audioCtx = new AudioCtxCls();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.frequency.value = severity === 'CRITICAL' ? 880 : 660;
-    osc.type = 'square';
-    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + 0.6);
+    const ctx  = audioCtx;
+    const now  = ctx.currentTime;
+    // CRITICAL: 3 hızlı süpürme  /  ALARM: 2 yavaş süpürme
+    const sweeps   = severity === 'CRITICAL' ? 3 : 2;
+    const duration = severity === 'CRITICAL' ? 0.35 : 0.55;
+    const lowHz    = severity === 'CRITICAL' ? 700  : 480;
+    const highHz   = severity === 'CRITICAL' ? 1500 : 900;
+    const total    = sweeps * duration;
+
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+
+    for (let i = 0; i < sweeps; i++) {
+      const t0 = now + i * duration;
+      const t1 = t0 + duration * 0.55;
+      const t2 = t0 + duration;
+      osc.frequency.setValueAtTime(lowHz,  t0);
+      osc.frequency.linearRampToValueAtTime(highHz, t1);
+      osc.frequency.linearRampToValueAtTime(lowHz,  t2);
+    }
+    gain.gain.setValueAtTime(0.28, now);
+    gain.gain.setValueAtTime(0.28, now + total - 0.04);
+    gain.gain.linearRampToValueAtTime(0,  now + total);
+    osc.start(now);
+    osc.stop(now + total);
   } catch(e) {}
 }
 
@@ -1160,6 +1209,14 @@ function toggleMute() {
 
 // ── ARCHIVE ───────────────────────────────────────────────────────────────
 let arcActiveLogPath = null;
+
+function exportToday() {
+  const today = new Date().toISOString().substring(0,10);
+  const a = document.createElement('a');
+  a.href = '/api/archive/export?date=today';
+  a.download = 'events-' + today + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
 
 async function loadArchive() {
   const body = document.getElementById('arc-body');
@@ -1189,6 +1246,14 @@ function renderArchive(logs, events) {
   }
 
   body.innerHTML = '';
+
+  // info: today's events are only exported at midnight
+  const today = new Date().toISOString().substring(0,10);
+  const infoBox = document.createElement('div');
+  infoBox.style.cssText='background:var(--blue-bg);border:1px solid var(--blue);border-radius:6px;padding:8px 14px;font-size:11px;color:var(--blue);display:flex;align-items:center;gap:10px';
+  infoBox.innerHTML=`ℹ️ <span>CSV arşivi her gece yarısı bir önceki günü dışa aktarır. <strong>${today}</strong> tarihli olayları hemen indirmek için üstteki "Bugünkü Olayları İndir" butonunu kullanın.</span>`;
+  body.appendChild(infoBox);
+
   body.appendChild(buildArcSection('📋 Log Dosyaları', logs, true));
   body.appendChild(buildArcSection('📊 CSV Olay Arşivi', events, false));
 }
@@ -1330,9 +1395,11 @@ async function refreshGlobalStats() {
     const total = d.totalEvents ?? '—';
     const unack = d.unacknowledgedAlarms ?? 0;
     document.getElementById('st-dbtotal').textContent = typeof total === 'number' ? total.toLocaleString() : total;
-    document.getElementById('st-unack').textContent   = unack;
-    if (unack > 0) document.getElementById('hdr-alarm').classList.add('blinking');
-    else document.getElementById('hdr-alarm').classList.remove('blinking');
+    document.getElementById('st-unack').textContent = unack;
+    const chip = document.getElementById('hdr-alarm');
+    chip.textContent = `⚠ ALARM: ${unack}`;
+    if (unack > 0) chip.classList.add('blinking');
+    else chip.classList.remove('blinking');
   } catch(e) {}
 }
 

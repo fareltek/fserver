@@ -74,4 +74,16 @@ public class SafetyEventService {
                     return repository.save(event);
                 });
     }
+
+    public Mono<Long> acknowledgeAllAlarms(String acknowledgedBy) {
+        return repository.findByAcknowledgedFalseOrderByEventTimeDesc()
+                .filter(e -> "ALARM".equals(e.getSeverity()) || "CRITICAL".equals(e.getSeverity()))
+                .flatMap(e -> {
+                    e.setAcknowledged(true);
+                    e.setAcknowledgedBy(acknowledgedBy);
+                    e.setAcknowledgedTime(OffsetDateTime.now(java.time.ZoneOffset.UTC));
+                    return repository.save(e);
+                })
+                .count();
+    }
 }

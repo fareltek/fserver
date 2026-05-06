@@ -20,7 +20,7 @@ fsignal:
   archive:
     path: ${ARCHIVE_PATH:./archive}
   tcp:
-    read-timeout-seconds: ${TCP_READ_TIMEOUT:300}
+    read-timeout-seconds: ${TCP_READ_TIMEOUT:3600}
 
 logging:
   level:
