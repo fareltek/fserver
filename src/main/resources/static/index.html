@@ -62,10 +62,12 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .hdr-alarms { display:flex; gap:8px; }
 .hdr-alarm-chip { display:flex; align-items:center; gap:4px; font-size:10px; padding:2px 8px;
                   border-radius:10px; font-weight:600; }
+.chip-critical{ background:#3d0000; color:#ff6b6b; border:1px solid #ff4444; }
 .chip-alarm  { background:var(--red-bg); color:var(--red); border:1px solid var(--red); }
 .chip-warn   { background:var(--yellow-bg); color:var(--yellow); border:1px solid var(--yellow); }
+.chip-info   { background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue); }
 @keyframes chipblink { 0%,100%{opacity:1} 50%{opacity:.25} }
-.chip-alarm.blinking { animation:chipblink .8s infinite; }
+.chip-critical.blinking, .chip-alarm.blinking { animation:chipblink .8s infinite; }
 .status-dot  { width:9px; height:9px; border-radius:50%; background:var(--subtle); transition:background .3s; flex-shrink:0; }
 .status-dot.connected { background:var(--green); box-shadow:0 0 6px var(--green); }
 .status-dot.error     { background:var(--red); }
@@ -329,8 +331,10 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   </div>
   <span class="sil-badge">SIL 2</span>
   <div class="hdr-alarms">
-    <span class="hdr-alarm-chip chip-alarm" id="hdr-alarm">⚠ ALARM: 0</span>
-    <span class="hdr-alarm-chip chip-warn"  id="hdr-warn">⚡ WARN: 0</span>
+    <span class="hdr-alarm-chip chip-critical" id="hdr-critical">🔴 KRİTİK: 0</span>
+    <span class="hdr-alarm-chip chip-alarm"    id="hdr-alarm">⚠ ALARM: 0</span>
+    <span class="hdr-alarm-chip chip-warn"     id="hdr-warn">⚡ UYARI: 0</span>
+    <span class="hdr-alarm-chip chip-info"     id="hdr-info">ℹ BİLGİ: 0</span>
   </div>
   <div class="hdr-right">
     <div class="status-dot" id="dot"></div>
@@ -581,7 +585,7 @@ const ROW_CSS  = {WARNING:'row-warning',ALARM:'row-alarm',CRITICAL:'row-critical
 
 let paused = false;
 let pauseBuffer = [];
-let totalPkt=0, totalBytes=0, totalAlarm=0, totalWarn=0;
+let totalPkt=0, totalBytes=0, totalCritical=0, totalAlarm=0, totalWarn=0, totalInfo=0;
 const activeSect = new Set();
 let fltSev='', fltType='', fltSect='', fltHex='';
 const lastSeqMap = {};
@@ -644,20 +648,10 @@ function connect() {
 }
 
 // ── MONITOR INITIAL LOAD ──────────────────────────────────────────────────
-async function loadRecentFromDB() {
+async function loadSectionFilters() {
   try {
-    const [evRes, secRes] = await Promise.all([
-      fetch('/api/events/recent?limit=200'),
-      fetch('/api/sections')
-    ]);
-    const events   = await evRes.json();
+    const secRes  = await fetch('/api/sections');
     const sections = await secRes.json();
-
-    // sourceAddr → name map
-    const addrMap = {};
-    sections.forEach(s => { addrMap[s.host+':'+s.port] = s.name; });
-
-    // populate monitor section filter
     const fltEl = document.getElementById('flt-sect');
     sections.forEach(s => {
       if (!fltEl.querySelector(`option[value="${esc(s.name)}"]`)) {
@@ -666,14 +660,7 @@ async function loadRecentFromDB() {
         fltEl.appendChild(o);
       }
     });
-
-    // add DB rows (oldest first)
-    [...events].reverse().forEach(e => addDbRow(e, addrMap));
-    document.getElementById('st-db').textContent = events.length + ' kayıt';
-  } catch(err) {
-    console.error('DB load error:', err);
-    document.getElementById('st-db').textContent = 'hata';
-  }
+  } catch(err) { console.error('Section filter load error:', err); }
 }
 
 // ── LIVE ROW ──────────────────────────────────────────────────────────────
@@ -689,12 +676,17 @@ function addLiveRow(ev) {
   const desc       = ev.description || ev.ascii || (ev.hex ? ev.hex.substring(0,40) : '—');
   const seqForGap  = ev.sequence;
 
-  if (severity==='ALARM'||severity==='CRITICAL') {
+  if (severity==='CRITICAL') {
+    totalCritical++;
+    playAlert('CRITICAL');
+    document.getElementById('hdr-critical').classList.add('blinking');
+  } else if (severity==='ALARM') {
     totalAlarm++;
-    playAlert(severity);
+    playAlert('ALARM');
     document.getElementById('hdr-alarm').classList.add('blinking');
   }
   if (severity==='WARNING') totalWarn++;
+  if (severity==='INFO')    totalInfo++;
   updateStats();
 
   appendRow({
@@ -809,10 +801,13 @@ function updateStats() {
   document.getElementById('st-packets').textContent = totalPkt.toLocaleString();
   document.getElementById('st-bytes').textContent   = totalBytes.toLocaleString();
   document.getElementById('st-sect').textContent    = activeSect.size;
-  document.getElementById('st-alarm').textContent   = totalAlarm;
+  document.getElementById('st-alarm').textContent   = totalCritical + totalAlarm;
   document.getElementById('st-warn').textContent    = totalWarn;
   document.getElementById('st-last').textContent    = new Date().toTimeString().substring(0,8);
-  document.getElementById('hdr-warn').textContent   = '⚡ WARN: '  + totalWarn;
+  document.getElementById('hdr-critical').textContent = '🔴 KRİTİK: ' + totalCritical;
+  document.getElementById('hdr-alarm').textContent    = '⚠ ALARM: '   + totalAlarm;
+  document.getElementById('hdr-warn').textContent     = '⚡ UYARI: '   + totalWarn;
+  document.getElementById('hdr-info').textContent     = 'ℹ BİLGİ: '   + totalInfo;
 }
 
 function rowMatchesFilter(tr) {
@@ -859,12 +854,16 @@ function clearLog() {
   document.getElementById('m-tbody').innerHTML='';
   document.getElementById('m-empty').style.display='flex';
   document.getElementById('m-table').style.display='none';
-  totalPkt=totalBytes=totalAlarm=totalWarn=0;
+  totalPkt=totalBytes=totalCritical=totalAlarm=totalWarn=totalInfo=0;
   activeSect.clear();
   pauseBuffer=[];
   ['st-packets','st-bytes','st-alarm','st-warn'].forEach(id=>document.getElementById(id).textContent='0');
   ['st-sect','st-last'].forEach(id=>document.getElementById(id).textContent='—');
-  document.getElementById('hdr-alarm').classList.remove('blinking');
+  ['hdr-critical','hdr-alarm'].forEach(id=>document.getElementById(id).classList.remove('blinking'));
+  document.getElementById('hdr-critical').textContent = '🔴 KRİTİK: 0';
+  document.getElementById('hdr-alarm').textContent    = '⚠ ALARM: 0';
+  document.getElementById('hdr-warn').textContent     = '⚡ UYARI: 0';
+  document.getElementById('hdr-info').textContent     = 'ℹ BİLGİ: 0';
   updateCount();
 }
 
@@ -1582,10 +1581,6 @@ async function refreshGlobalStats() {
     const unack = d.unacknowledgedAlarms ?? 0;
     document.getElementById('st-dbtotal').textContent = typeof total === 'number' ? total.toLocaleString() : total;
     document.getElementById('st-unack').textContent = unack;
-    const chip = document.getElementById('hdr-alarm');
-    chip.textContent = `⚠ ALARM: ${unack}`;
-    if (unack > 0) chip.classList.add('blinking');
-    else chip.classList.remove('blinking');
   } catch(e) {}
 }
 
@@ -1598,7 +1593,7 @@ setInterval(refreshGlobalStats, 30000);
 // ── INIT ──────────────────────────────────────────────────────────────────
 (async () => {
   connect();
-  await loadRecentFromDB();
+  await loadSectionFilters();
   refreshGlobalStats();
 })();
 </script>
