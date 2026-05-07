@@ -21,7 +21,7 @@ public class TcpConnectionHandler {
     private static final Logger log = LoggerFactory.getLogger(TcpConnectionHandler.class);
 
     private final SafetyEventService safetyEventService;
-    private final Sinks.Many<TcpDataEvent> dataSink = Sinks.many().replay().limit(100);
+    private final Sinks.Many<TcpDataEvent> dataSink = Sinks.many().multicast().onBackpressureBuffer(100);
 
     private final ConcurrentHashMap<Integer, SectionStats> sectionStats = new ConcurrentHashMap<>();
 
