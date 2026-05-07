@@ -1100,13 +1100,16 @@ function renderReportTable(data) {
     const devType = e.deviceType || '—';
     const devId   = e.deviceId   != null ? e.deviceId  : '—';
     const code    = e.eventCode  != null ? '0x'+e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+    const isAlarmSev = sev === 'ALARM' || sev === 'CRITICAL';
     let ackTxt;
     if (e.acknowledged) {
       const by   = e.acknowledgedBy   || '';
       const when = e.acknowledgedTime ? toLocalTime(e.acknowledgedTime, true) : '';
       ackTxt = `<span class="badge b-ack" style="white-space:normal;font-size:9px">✓ ${esc(by)}<br><span style="font-size:8px;color:var(--muted)">${esc(when)}</span></span>`;
-    } else {
+    } else if (isAlarmSev) {
       ackTxt = '<span class="badge b-unack">Bekliyor</span>';
+    } else {
+      ackTxt = '<span style="color:var(--subtle)">—</span>';
     }
     let rowStyle='';
     if(sev==='CRITICAL') rowStyle='background:var(--red-bg)';
