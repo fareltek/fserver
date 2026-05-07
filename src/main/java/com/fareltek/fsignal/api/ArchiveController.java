@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -13,6 +14,7 @@ import reactor.core.scheduler.Schedulers;
 
 import com.fareltek.fsignal.db.SafetyEvent;
 import com.fareltek.fsignal.db.SafetyEventRepository;
+import com.fareltek.fsignal.db.SafetyEventService;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -31,13 +33,17 @@ public class ArchiveController {
     private static final Logger log = LoggerFactory.getLogger(ArchiveController.class);
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC);
 
+    private static final String SYS = "SYSTEM";
+
     @Value("${fsignal.archive.path:./archive}")
     private String archivePath;
 
     private final SafetyEventRepository repository;
+    private final SafetyEventService    eventService;
 
-    public ArchiveController(SafetyEventRepository repository) {
-        this.repository = repository;
+    public ArchiveController(SafetyEventRepository repository, SafetyEventService eventService) {
+        this.repository   = repository;
+        this.eventService = eventService;
     }
 
     /** List all files under archive/logs and archive/events */
@@ -130,7 +136,9 @@ public class ArchiveController {
     /** On-demand CSV export for any date (default: today) */
     @GetMapping("/export")
     public Mono<ResponseEntity<byte[]>> exportDate(
-            @RequestParam(defaultValue = "today") String date) {
+            @RequestParam(defaultValue = "today") String date,
+            Authentication auth) {
+        String actor = auth != null ? auth.getName() : "system";
         LocalDate day = "today".equals(date)
                 ? LocalDate.now(ZoneOffset.UTC)
                 : LocalDate.parse(date);
@@ -143,6 +151,9 @@ public class ArchiveController {
                 .collectList()
                 .flatMap(events -> Mono.fromCallable(() -> buildCsvBytes(events))
                         .subscribeOn(Schedulers.boundedElastic()))
+                .flatMap(bytes -> eventService.saveSystemEvent(SYS, "INFO",
+                        "CSV dışa aktarıldı: " + day + " | İşlem: " + actor)
+                        .thenReturn(bytes))
                 .map(bytes -> ResponseEntity.ok()
                         .header("Content-Disposition",
                                 "attachment; filename=\"events-" + day + ".csv\"")
@@ -178,7 +189,8 @@ public class ArchiveController {
 
     /** Download a file by relative path */
     @GetMapping("/download")
-    public Mono<ResponseEntity<byte[]>> download(@RequestParam String f) {
+    public Mono<ResponseEntity<byte[]>> download(@RequestParam String f, Authentication auth) {
+        String actor = auth != null ? auth.getName() : "system";
         return Mono.fromCallable(() -> {
             Path target = resolveAndValidate(f);
             if (target == null) return ResponseEntity.badRequest().<byte[]>build();
@@ -193,7 +205,15 @@ public class ArchiveController {
                             : (filename.endsWith(".csv") ? MediaType.parseMediaType("text/csv") : MediaType.TEXT_PLAIN))
                     .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
                     .body(bytes);
-        }).subscribeOn(Schedulers.boundedElastic());
+        }).subscribeOn(Schedulers.boundedElastic())
+          .flatMap(resp -> {
+              if (resp.getStatusCode().is2xxSuccessful()) {
+                  return eventService.saveSystemEvent(SYS, "INFO",
+                          "Arşiv dosyası indirildi: " + f + " | İşlem: " + actor)
+                          .thenReturn(resp);
+              }
+              return Mono.just(resp);
+          });
     }
 
     private Path resolveAndValidate(String relativePath) {

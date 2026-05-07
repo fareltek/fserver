@@ -110,7 +110,9 @@ public class MonitorController {
             @RequestParam(required = false) String sourceAddr,
             @RequestParam(required = false) String messageType,
             @RequestParam(required = false) Boolean acknowledged,
-            @RequestParam(defaultValue = "500") int limit) {
+            @RequestParam(defaultValue = "500") int limit,
+            Authentication auth) {
+        String actor = auth != null ? auth.getName() : "system";
         OffsetDateTime fromDt = from != null ? LocalDate.parse(from).atStartOfDay().atOffset(ZoneOffset.UTC) : null;
         OffsetDateTime toDt   = to   != null ? LocalDate.parse(to).atTime(23, 59, 59).atOffset(ZoneOffset.UTC) : null;
         return safetyEventService
@@ -119,12 +121,18 @@ public class MonitorController {
                 .flatMap(events -> Mono.fromCallable(() ->
                         pdfReportService.generate(events, from, to, severity, sourceAddr, messageType, acknowledged))
                         .subscribeOn(Schedulers.boundedElastic()))
+                .flatMap(bytes -> safetyEventService.saveSystemEvent("SYSTEM", "INFO",
+                        "PDF raporu indirildi (tarih: " + (from != null ? from : "*") + " - " + (to != null ? to : "*")
+                        + ", filtre: severity=" + nvl(severity) + " messageType=" + nvl(messageType)
+                        + ") | İşlem: " + actor).thenReturn(bytes))
                 .map(bytes -> ResponseEntity.ok()
                         .header("Content-Disposition",
                                 "attachment; filename=\"FSIGNAL_REPORT_" + LocalDate.now(ZoneOffset.UTC) + ".pdf\"")
                         .contentType(MediaType.APPLICATION_PDF)
                         .body(bytes));
     }
+
+    private String nvl(String s) { return s != null ? s : "*"; }
 
     @PostMapping("/api/events/{id}/acknowledge")
     public Mono<Map<String, Object>> acknowledge(
