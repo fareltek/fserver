@@ -15,13 +15,5 @@ services:
       DB_PASS:     ${DB_PASS:-2580}
       ARCHIVE_PATH: /archive
     volumes:
-      - fsignal-archive:/archive
+      - /archive:/archive
     restart: unless-stopped
-
-volumes:
-  fsignal-archive:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /archive
