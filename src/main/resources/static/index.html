@@ -269,6 +269,43 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   tbody tr.row-warning  { background:#fffbea!important; }
 }
 
+/* ── AUTH OVERLAY ────────────────────────────────────────────────────────── */
+#auth-overlay { position:fixed; inset:0; z-index:1000; background:var(--bg);
+                display:flex; align-items:center; justify-content:center; }
+#auth-overlay.hidden { display:none; }
+.auth-box { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+            padding:32px 36px; width:400px; max-width:calc(100vw - 40px); }
+.auth-logo { font-size:18px; font-weight:700; color:var(--blue); letter-spacing:1.5px; margin-bottom:4px; }
+.auth-sub { font-size:10px; color:var(--muted); margin-bottom:20px; letter-spacing:.5px; }
+.auth-tabs { display:flex; gap:0; margin-bottom:20px; border-bottom:1px solid var(--border); }
+.auth-tab { padding:8px 18px; font-size:12px; color:var(--muted); cursor:pointer;
+            border-bottom:2px solid transparent; transition:color .15s,border-color .15s; }
+.auth-tab.active { color:var(--blue); border-bottom-color:var(--blue); }
+.auth-form { display:none; }
+.auth-form.active { display:block; }
+.auth-fg { display:flex; flex-direction:column; gap:4px; margin-bottom:14px; }
+.auth-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+.auth-input,.auth-select { background:var(--bg); border:1px solid var(--border); color:var(--text);
+                           padding:8px 12px; border-radius:6px; font-family:inherit;
+                           font-size:12px; outline:none; width:100%; }
+.auth-input:focus,.auth-select:focus { border-color:var(--blue); }
+.auth-select option { background:var(--surface); }
+.auth-btn { width:100%; padding:10px; background:#1f6feb; border:none; color:#fff;
+            border-radius:6px; font-family:inherit; font-size:13px; font-weight:600;
+            cursor:pointer; margin-top:4px; transition:background .15s; }
+.auth-btn:hover { background:#388bfd; }
+.auth-btn:disabled { opacity:.5; cursor:not-allowed; }
+.auth-msg { font-size:11px; margin-top:10px; display:none; }
+.auth-msg.error   { color:var(--red); }
+.auth-msg.success { color:var(--green); }
+
+/* user chip in header */
+.user-chip { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
+.user-role-badge { font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; }
+.role-manager  { background:#1a3a1e; color:var(--green); border:1px solid var(--green); }
+.role-operator { background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue); }
+.role-guest    { background:var(--elevated); color:var(--muted); border:1px solid var(--border); }
+
 /* ── LIVE LOG TAB ─────────────────────────────────────────────────────────── */
 .ll-wrap  { flex:1; overflow-y:auto; background:var(--bg); }
 .ll-wrap::-webkit-scrollbar { width:5px; }
@@ -320,6 +357,47 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 </head>
 <body>
 
+<!-- ══════════════════════════ AUTH OVERLAY ═════════════════════════════════ -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">FSIGNAL</div>
+    <div class="auth-sub">TRAMWAY SIGNALIZATION · EN50129 · SIL2</div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="atab-login"    onclick="switchAuthTab('login')">Giriş Yap</div>
+      <div class="auth-tab"        id="atab-register" onclick="switchAuthTab('register')">Kayıt Ol</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="auth-form active" id="aform-login">
+      <div class="auth-fg"><label class="auth-label">E-Posta</label>
+        <input class="auth-input" id="login-email" type="email" placeholder="ornek@firma.com" autocomplete="username"></div>
+      <div class="auth-fg"><label class="auth-label">Şifre</label>
+        <input class="auth-input" id="login-pass"  type="password" placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="auth-btn" id="login-btn" onclick="doLogin()">Giriş Yap</button>
+      <div class="auth-msg" id="login-msg"></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="auth-form" id="aform-register">
+      <div class="auth-fg"><label class="auth-label">Ad Soyad</label>
+        <input class="auth-input" id="reg-name"  type="text" placeholder="Adı Soyadı"></div>
+      <div class="auth-fg"><label class="auth-label">E-Posta</label>
+        <input class="auth-input" id="reg-email" type="email" placeholder="ornek@firma.com" autocomplete="username"></div>
+      <div class="auth-fg"><label class="auth-label">Şifre (min 8 karakter)</label>
+        <input class="auth-input" id="reg-pass"  type="password" placeholder="••••••••" autocomplete="new-password"></div>
+      <div class="auth-fg"><label class="auth-label">Yetki</label>
+        <select class="auth-select" id="reg-role">
+          <option value="GUEST">GUEST — Sadece görüntüleme</option>
+          <option value="OPERATOR">OPERATOR — Alarm onaylama</option>
+          <option value="MANAGER">MANAGER — Tam yönetim</option>
+        </select></div>
+      <button class="auth-btn" id="reg-btn" onclick="doRegister()">Kayıt Ol</button>
+      <div class="auth-msg" id="reg-msg"></div>
+    </div>
+  </div>
+</div>
+
 <header>
   <div class="hdr-logo">
     <div>
@@ -332,11 +410,16 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
     <span class="hdr-alarm-chip chip-alarm"    id="hdr-alarm">⚠ ALARM: 0</span>
   </div>
   <div class="hdr-right">
+    <div class="user-chip" id="user-chip" style="display:none">
+      <span id="user-name"></span>
+      <span class="user-role-badge" id="user-role-badge"></span>
+    </div>
     <div class="status-dot" id="dot"></div>
     <span id="status-label">Bağlanıyor...</span>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Tema Değiştir">🌙</button>
     <button class="theme-btn" id="mute-btn"  onclick="toggleMute()"        title="Ses Kapat">🔔</button>
     <button class="theme-btn" id="sound-test" onclick="playAlert('ALARM')" title="Ses Testi">🔈</button>
+    <button class="theme-btn" id="logout-btn" onclick="doLogout()" title="Çıkış Yap" style="display:none">🚪</button>
   </div>
 </header>
 
@@ -573,6 +656,149 @@ function toggleTheme() {
   document.getElementById('theme-btn').textContent = saved === 'dark' ? '☀️' : '🌙';
 })();
 
+// ── AUTH ──────────────────────────────────────────────────────────────────
+let authToken   = localStorage.getItem('fsignal-token');
+let currentUser = null; // {id, fullName, email, role}
+
+function setToken(t) { authToken = t; localStorage.setItem('fsignal-token', t); }
+function clearToken()  { authToken = null; currentUser = null; localStorage.removeItem('fsignal-token'); }
+
+async function authFetch(url, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  const r = await fetch(url, { ...options, headers });
+  if (r.status === 401 || r.status === 403) {
+    clearToken();
+    showAuthOverlay();
+    throw new Error('Oturum süresi doldu, lütfen tekrar giriş yapın.');
+  }
+  return r;
+}
+
+function showAuthOverlay() {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+}
+function hideAuthOverlay() {
+  document.getElementById('auth-overlay').classList.add('hidden');
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('atab-login').classList.toggle('active',    tab==='login');
+  document.getElementById('atab-register').classList.toggle('active', tab==='register');
+  document.getElementById('aform-login').classList.toggle('active',    tab==='login');
+  document.getElementById('aform-register').classList.toggle('active', tab==='register');
+  document.getElementById('login-msg').style.display = 'none';
+  document.getElementById('reg-msg').style.display   = 'none';
+}
+
+function showAuthMsg(id, msg, isError) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'auth-msg ' + (isError ? 'error' : 'success');
+  el.style.display = 'block';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) { showAuthMsg('login-msg', 'E-posta ve şifre girin.', true); return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = '⏳ Giriş yapılıyor...';
+  try {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    if (!r.ok) {
+      const err = await r.text();
+      showAuthMsg('login-msg', err || 'Giriş başarısız.', true);
+      return;
+    }
+    const d = await r.json();
+    setToken(d.token);
+    await initApp();
+  } catch(e) { showAuthMsg('login-msg', e.message, true); }
+  finally { btn.disabled = false; btn.textContent = 'Giriş Yap'; }
+}
+
+async function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
+  const role  = document.getElementById('reg-role').value;
+  if (!name)           { showAuthMsg('reg-msg', 'Ad soyad zorunludur.', true); return; }
+  if (!email)          { showAuthMsg('reg-msg', 'E-posta zorunludur.', true); return; }
+  if (pass.length < 8) { showAuthMsg('reg-msg', 'Şifre en az 8 karakter olmalı.', true); return; }
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true; btn.textContent = '⏳ Kayıt oluşturuluyor...';
+  try {
+    const r = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName: name, email, password: pass, role })
+    });
+    if (!r.ok) {
+      const err = await r.text();
+      showAuthMsg('reg-msg', err || 'Kayıt başarısız.', true);
+      return;
+    }
+    showAuthMsg('reg-msg', 'Kayıt başarılı! Giriş yapabilirsiniz.', false);
+    setTimeout(() => switchAuthTab('login'), 1500);
+  } catch(e) { showAuthMsg('reg-msg', e.message, true); }
+  finally { btn.disabled = false; btn.textContent = 'Kayıt Ol'; }
+}
+
+function doLogout() {
+  clearToken();
+  currentUser = null;
+  applyRoleUI(null);
+  document.getElementById('user-chip').style.display = 'none';
+  document.getElementById('logout-btn').style.display = 'none';
+  document.getElementById('m-tbody').innerHTML = '';
+  document.getElementById('m-empty').style.display = 'flex';
+  document.getElementById('m-table').style.display = 'none';
+  showAuthOverlay();
+}
+
+function applyRoleUI(role) {
+  const canAckAll  = role === 'MANAGER';
+  const canAck     = role === 'OPERATOR' || role === 'MANAGER';
+  const canManage  = role === 'MANAGER';
+
+  const ackAllBtn = document.getElementById('btn-ack-all');
+  if (ackAllBtn) ackAllBtn.style.display = canAckAll ? '' : 'none';
+
+  // Section management toolbar buttons (+ Yeni Section, edit/delete in cards)
+  document.querySelectorAll('#sec-body .btn.primary, .sec-actions button').forEach(b => {
+    b.style.display = canManage ? '' : 'none';
+  });
+
+  // store for appendRow to use
+  window._canAck = canAck;
+}
+
+async function initApp() {
+  try {
+    const r = await authFetch('/api/auth/me');
+    if (!r.ok) { clearToken(); showAuthOverlay(); return; }
+    currentUser = await r.json();
+  } catch { clearToken(); showAuthOverlay(); return; }
+
+  // show user info in header
+  document.getElementById('user-name').textContent = currentUser.fullName;
+  const badge = document.getElementById('user-role-badge');
+  badge.textContent = currentUser.role;
+  badge.className = 'user-role-badge role-' + currentUser.role.toLowerCase();
+  document.getElementById('user-chip').style.display  = 'flex';
+  document.getElementById('logout-btn').style.display = '';
+  hideAuthOverlay();
+  applyRoleUI(currentUser.role);
+  connect();
+  await loadSectionFilters();
+  refreshGlobalStats();
+}
+
 // ── GLOBALS ───────────────────────────────────────────────────────────────
 const SEV_CSS  = {INFO:'b-info',DATA:'b-data',WARNING:'b-warning',ALARM:'b-alarm',CRITICAL:'b-critical',HEARTBEAT:'b-heartbeat'};
 const ROW_CSS  = {WARNING:'row-warning',ALARM:'row-alarm',CRITICAL:'row-critical',HEARTBEAT:'row-heartbeat'};
@@ -620,7 +846,8 @@ function switchTab(name) {
 
 // ── SSE ───────────────────────────────────────────────────────────────────
 function connect() {
-  const es = new EventSource('/api/stream');
+  const url = '/api/stream' + (authToken ? '?token=' + encodeURIComponent(authToken) : '');
+  const es = new EventSource(url);
   es.onmessage = ev => {
     try {
       const d = JSON.parse(ev.data);
@@ -644,7 +871,7 @@ function connect() {
 // ── MONITOR INITIAL LOAD ──────────────────────────────────────────────────
 async function loadSectionFilters() {
   try {
-    const secRes  = await fetch('/api/sections');
+    const secRes  = await authFetch('/api/sections');
     const sections = await secRes.json();
     const fltEl = document.getElementById('flt-sect');
     sections.forEach(s => {
@@ -729,7 +956,7 @@ function appendRow(r) {
   const rowCls  = (ROW_CSS[r.severity]||ROW_CSS[r.msgType]||'') + (r.isLive?' is-live':' row-db');
   const isAlarm = r.severity === 'ALARM' || r.severity === 'CRITICAL';
   let ackCell;
-  if (r.id && !r.acknowledged && isAlarm) {
+  if (r.id && !r.acknowledged && isAlarm && window._canAck) {
     ackCell = `<button class="btn sm" onclick="ackEvent('${r.id}',this)">Onayla</button>`;
   } else if (r.acknowledged) {
     const by   = r.acknowledgedBy   ? esc(r.acknowledgedBy)                          : '';
@@ -869,7 +1096,7 @@ let sections=[], editingId=null;
 
 async function loadSections() {
   try {
-    const r = await fetch('/api/sections');
+    const r = await authFetch('/api/sections');
     sections = await r.json();
     smartRender();
   } catch(e) {
@@ -977,7 +1204,7 @@ async function submitForm() {
   if(!host){showFE('Host IP zorunludur.');return;}
   if(port<1||port>65535){showFE('Port 1–65535 arasında olmalı.');return;}
   try {
-    const r=await fetch(editingId?`/api/sections/${editingId}`:'/api/sections',{
+    const r=await authFetch(editingId?`/api/sections/${editingId}`:'/api/sections',{
       method:editingId?'PUT':'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name,host,port,description:desc||null,enabled})
@@ -988,7 +1215,7 @@ async function submitForm() {
 }
 async function deleteSection(id,name) {
   if(!confirm(`"${name}" silinsin mi?`)) return;
-  await fetch(`/api/sections/${id}`,{method:'DELETE'});
+  await authFetch(`/api/sections/${id}`,{method:'DELETE'});
   await loadSections();
 }
 function showFE(msg){const e=document.getElementById('form-error');e.textContent=msg;e.style.display='block';}
@@ -1005,7 +1232,7 @@ function initReportTab() {
   if (!document.getElementById('rpt-from').value) document.getElementById('rpt-from').value = fmt(week);
   if (!document.getElementById('rpt-to').value)   document.getElementById('rpt-to').value   = fmt(today);
 
-  fetch('/api/sections').then(r=>r.json()).then(secs => {
+  authFetch('/api/sections').then(r=>r.json()).then(secs => {
     const el=document.getElementById('rpt-sect');
     secs.forEach(s => {
       reportAddrMap[s.host+':'+s.port] = s.name;
@@ -1055,7 +1282,7 @@ async function doFetch(url) {
   document.getElementById('btn-pdf').disabled=true;
 
   try {
-    const r = await fetch(url);
+    const r = await authFetch(url);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     reportData = await r.json();
     renderReportTable(reportData);
@@ -1161,7 +1388,7 @@ async function exportPDF() {
     if (rp.ack)     p.set('acknowledged',rp.ack);
     if (rp.limit)   p.set('limit',       rp.limit);
 
-    const resp = await fetch('/api/reports/pdf?' + p);
+    const resp = await authFetch('/api/reports/pdf?' + p);
     if (!resp.ok) throw new Error('PDF üretim hatası: HTTP ' + resp.status);
 
     const blob = await resp.blob();
@@ -1189,7 +1416,7 @@ function decrementChip(severity) {
 async function ackEvent(id, btn) {
   btn.disabled = true;
   try {
-    const r = await fetch(`/api/events/${id}/acknowledge?by=operator`, {method:'POST'});
+    const r = await authFetch(`/api/events/${id}/acknowledge`, {method:'POST'});
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const tr = btn.closest('tr');
     const sev = tr?.dataset.severity;
@@ -1202,7 +1429,7 @@ async function ackEvent(id, btn) {
 async function ackEventReport(id, btn) {
   btn.disabled = true;
   try {
-    await fetch(`/api/events/${id}/acknowledge?by=operator`, {method:'POST'});
+    await authFetch(`/api/events/${id}/acknowledge`, {method:'POST'});
     btn.closest('td').innerHTML = '<span class="badge b-ack">✓ Onaylı</span>';
     const ev = reportData.find(e => e.id === id);
     if (ev) ev.acknowledged = true;
@@ -1217,7 +1444,7 @@ async function acknowledgeAll() {
   const btn = document.getElementById('btn-ack-all');
   btn.disabled = true;
   try {
-    const r = await fetch('/api/events/acknowledge-all?by=operator', {method:'POST'});
+    const r = await authFetch('/api/events/acknowledge-all', {method:'POST'});
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     // update all unacknowledged alarm/critical rows in the table
@@ -1296,8 +1523,9 @@ function exportToday() {
 
 function exportDate(date) {
   const param = (date === new Date().toISOString().substring(0,10)) ? 'today' : date;
+  const tok = authToken ? '&token=' + encodeURIComponent(authToken) : '';
   const a = document.createElement('a');
-  a.href = '/api/archive/export?date=' + encodeURIComponent(param);
+  a.href = '/api/archive/export?date=' + encodeURIComponent(param) + tok;
   a.download = 'events-' + date + '.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
@@ -1310,8 +1538,8 @@ async function loadArchive() {
 
   try {
     const [listRes, datesRes] = await Promise.all([
-      fetch('/api/archive/list'),
-      fetch('/api/archive/dates')
+      authFetch('/api/archive/list'),
+      authFetch('/api/archive/dates')
     ]);
     if (!listRes.ok) throw new Error('HTTP ' + listRes.status);
     const data  = await listRes.json();
@@ -1370,10 +1598,11 @@ function renderArchive(logs, dates) {
         : (d.hasFile ? '<span style="color:var(--blue);font-size:9px">● Arşivlendi</span>'
                      : '<span style="color:var(--muted);font-size:9px">○ Dosya yok</span>');
       const sizeStr = d.size ? formatBytes(d.size) : '—';
+      const tok = authToken ? '&token=' + encodeURIComponent(authToken) : '';
       const dlBtn = isToday
         ? `<button class="btn sm" onclick="exportToday()">⬇ İndir</button>`
         : (d.hasFile
-            ? `<a class="btn sm" href="/api/archive/download?f=${encodeURIComponent(d.filePath)}" download="events-${d.date}.csv">⬇ İndir</a>`
+            ? `<a class="btn sm" href="/api/archive/download?f=${encodeURIComponent(d.filePath)}${tok}" download="events-${d.date}.csv">⬇ İndir</a>`
             : `<button class="btn sm" onclick="exportDate('${d.date}')">⬇ Oluştur</button>`);
       tr.innerHTML = `<td class="arc-fname">${esc(d.date)}</td>
         <td style="text-align:center">${statusBadge}</td>
@@ -1423,7 +1652,7 @@ function buildArcSection(title, files, isLog) {
       <td class="arc-mod">${esc(f.modified)}</td>
       <td style="text-align:center">
         ${isActive ? `<button class="btn sm" onclick="tailLogFile('${esc(f.path)}',this)">Görüntüle</button>` : ''}
-        <a class="btn sm" href="/api/archive/download?f=${encodeURIComponent(f.path)}" download="${esc(f.name)}">İndir</a>
+        <a class="btn sm" href="/api/archive/download?f=${encodeURIComponent(f.path)}${authToken?'&token='+encodeURIComponent(authToken):''}" download="${esc(f.name)}">İndir</a>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -1441,7 +1670,7 @@ async function tailLogFile(path, btn) {
   const origText = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = '...'; }
   try {
-    const r = await fetch(`/api/archive/tail?f=${encodeURIComponent(path)}&n=200`);
+    const r = await authFetch(`/api/archive/tail?f=${encodeURIComponent(path)}&n=200`);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const lines = await r.json();
     showLogBox(path, lines);
@@ -1522,7 +1751,8 @@ const LL_MAX = 1000;
 function startLiveLog() {
   if (llEs) return;
   llSetStatus('Bağlanıyor...');
-  llEs = new EventSource('/api/archive/live-log');
+  const llUrl = '/api/archive/live-log' + (authToken ? '?token=' + encodeURIComponent(authToken) : '');
+  llEs = new EventSource(llUrl);
   llEs.onopen  = () => llSetStatus('Canlı — akış aktif');
   llEs.onerror = () => { llSetStatus('Bağlantı hatası, yeniden deniyor...'); };
   llEs.onmessage = ev => {
@@ -1577,7 +1807,7 @@ function llApplyFilter() {
 // ── GLOBAL STATS REFRESH ──────────────────────────────────────────────────
 async function refreshGlobalStats() {
   try {
-    const r = await fetch('/api/stats');
+    const r = await authFetch('/api/stats');
     if (!r.ok) return;
     const d = await r.json();
     const total = d.totalEvents ?? '—';
@@ -1595,9 +1825,11 @@ setInterval(refreshGlobalStats, 30000);
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 (async () => {
-  connect();
-  await loadSectionFilters();
-  refreshGlobalStats();
+  if (authToken) {
+    await initApp();
+  } else {
+    showAuthOverlay();
+  }
 })();
 </script>
 </body>

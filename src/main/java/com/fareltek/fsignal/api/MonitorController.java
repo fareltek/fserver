@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -128,13 +129,14 @@ public class MonitorController {
     @PostMapping("/api/events/{id}/acknowledge")
     public Mono<Map<String, Object>> acknowledge(
             @PathVariable UUID id,
-            @RequestParam(defaultValue = "operator") String by) {
+            Authentication auth) {
+        String by = auth != null ? auth.getName() : "system";
         return safetyEventService.acknowledge(id, by).map(this::toDto);
     }
 
     @PostMapping("/api/events/acknowledge-all")
-    public Mono<Map<String, Object>> acknowledgeAll(
-            @RequestParam(defaultValue = "operator") String by) {
+    public Mono<Map<String, Object>> acknowledgeAll(Authentication auth) {
+        String by = auth != null ? auth.getName() : "system";
         return safetyEventService.acknowledgeAllAlarms(by)
                 .map(count -> Map.of("acknowledged", count));
     }
