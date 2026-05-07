@@ -131,14 +131,22 @@ public class MonitorController {
             @PathVariable UUID id,
             Authentication auth) {
         String by = auth != null ? auth.getName() : "system";
-        return safetyEventService.acknowledge(id, by).map(this::toDto);
+        return safetyEventService.acknowledge(id, by)
+                .flatMap(event -> safetyEventService.saveSystemEvent("SYSTEM", "INFO",
+                        "Olay onaylandı: ID=" + event.getId()
+                        + " Tip=" + event.getMessageType()
+                        + " Kaynak=" + event.getSourceAddr()
+                        + " | İşlem: " + by)
+                        .thenReturn(toDto(event)));
     }
 
     @PostMapping("/api/events/acknowledge-all")
     public Mono<Map<String, Object>> acknowledgeAll(Authentication auth) {
         String by = auth != null ? auth.getName() : "system";
         return safetyEventService.acknowledgeAllAlarms(by)
-                .map(count -> Map.of("acknowledged", count));
+                .flatMap(count -> safetyEventService.saveSystemEvent("SYSTEM", "INFO",
+                        "Tüm alarmlar onaylandı (" + count + " olay) | İşlem: " + by)
+                        .thenReturn(Map.<String, Object>of("acknowledged", count)));
     }
 
     private Map<String, Object> toDto(SafetyEvent e) {

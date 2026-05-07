@@ -19,6 +19,7 @@ public class TcpDeviceClient {
     private final TcpConnectionHandler handler;
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicBoolean connected = new AtomicBoolean(false);
+    private final AtomicBoolean firstErrorInCycle = new AtomicBoolean(true);
 
     public TcpDeviceClient(Section section, TcpConnectionHandler handler) {
         this.section = section;
@@ -50,6 +51,7 @@ public class TcpDeviceClient {
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 .doOnConnected(conn -> {
                     connected.set(true);
+                    firstErrorInCycle.set(true);
                     handler.onConnected(section);
                 })
                 .doOnDisconnected(conn -> {
@@ -68,7 +70,10 @@ public class TcpDeviceClient {
                         null,
                         error -> {
                             if (running.get()) {
-                                log.warn("[TCP][{}] Baglanti hatasi: {}", section.getName(), error.getMessage());
+                                if (firstErrorInCycle.getAndSet(false)) {
+                                    log.warn("[TCP][{}] Baglanti hatasi: {}", section.getName(), error.getMessage());
+                                    handler.onConnectionError(section, error.getMessage());
+                                }
                                 Mono.delay(Duration.ofSeconds(RECONNECT_SECONDS)).subscribe(x -> connect());
                             }
                         },

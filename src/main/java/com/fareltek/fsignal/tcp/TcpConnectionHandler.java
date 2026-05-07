@@ -51,6 +51,8 @@ public class TcpConnectionHandler {
         st.reconnects.incrementAndGet();
         st.connectedSince = Instant.now();
         st.connected = true;
+        safetyEventService.saveSystemEvent(s.sourceAddr(), "INFO",
+                "[" + s.getName() + "] TCP bağlantısı kuruldu (" + s.sourceAddr() + ")").subscribe();
         emit(TcpDataEvent.connectionEvent(s.getId(), s.getName(), s.sourceAddr(), "CONNECTED"));
     }
 
@@ -58,7 +60,14 @@ public class TcpConnectionHandler {
         log.warn("[TCP][{}] Baglanti kesildi: {}", s.getName(), s.sourceAddr());
         SectionStats st = sectionStats.get(s.getId());
         if (st != null) { st.connected = false; st.connectedSince = null; }
+        safetyEventService.saveSystemEvent(s.sourceAddr(), "WARNING",
+                "[" + s.getName() + "] TCP bağlantısı kesildi (" + s.sourceAddr() + ")").subscribe();
         emit(TcpDataEvent.connectionEvent(s.getId(), s.getName(), s.sourceAddr(), "DISCONNECTED"));
+    }
+
+    public void onConnectionError(Section s, String errorMsg) {
+        safetyEventService.saveSystemEvent(s.sourceAddr(), "WARNING",
+                "[" + s.getName() + "] Bağlantı hatası: " + errorMsg).subscribe();
     }
 
     public void onData(Section s, byte[] data) {

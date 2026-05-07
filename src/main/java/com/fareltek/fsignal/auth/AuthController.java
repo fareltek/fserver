@@ -1,5 +1,6 @@
 package com.fareltek.fsignal.auth;
 
+import com.fareltek.fsignal.db.SafetyEventService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -12,10 +13,12 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AppUserService userService;
+    private final AppUserService     userService;
+    private final SafetyEventService eventService;
 
-    public AuthController(AppUserService userService) {
-        this.userService = userService;
+    public AuthController(AppUserService userService, SafetyEventService eventService) {
+        this.userService  = userService;
+        this.eventService = eventService;
     }
 
     @PostMapping("/register")
@@ -41,8 +44,11 @@ public class AuthController {
     public Mono<Map<String, Object>> login(@RequestBody LoginRequest req) {
         if (req.email() == null || req.password() == null)
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-posta ve şifre zorunludur."));
-        return userService.login(req.email().toLowerCase().trim(), req.password())
-                .map(token -> Map.<String, Object>of("token", token))
+        String email = req.email().toLowerCase().trim();
+        return userService.login(email, req.password())
+                .flatMap(token -> eventService.saveSystemEvent("SYSTEM", "INFO",
+                        "Giriş yapıldı: " + email)
+                        .thenReturn(Map.<String, Object>of("token", token)))
                 .onErrorMap(IllegalArgumentException.class,
                         e -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage()))
                 .onErrorMap(IllegalStateException.class,

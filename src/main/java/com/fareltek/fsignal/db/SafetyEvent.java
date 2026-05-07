@@ -33,6 +33,22 @@ public class SafetyEvent implements Persistable<UUID> {
     private String  acknowledgedBy;
     private OffsetDateTime acknowledgedTime;
 
+    /** Factory: system/infrastructure events (TCP connect, disconnect, errors). */
+    public static SafetyEvent fromSystemEvent(String sourceAddr, String severity, String description) {
+        SafetyEvent e = new SafetyEvent();
+        e.id          = UUID.randomUUID();
+        e.isNew       = true;
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        e.receiveTime = now;
+        e.eventTime   = now;
+        e.sourceAddr  = sourceAddr;
+        e.messageType = "SYSTEM";
+        e.severity    = severity;
+        e.description = description;
+        e.acknowledged = false;
+        return e;
+    }
+
     /** Factory: parses FA·51 frame if valid, falls back to RAW_DATA. */
     public static SafetyEvent fromRaw(String sourceAddr, byte[] rawData, String hex) {
         SafetyEvent e = new SafetyEvent();

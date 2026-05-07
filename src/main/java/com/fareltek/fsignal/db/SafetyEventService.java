@@ -20,6 +20,11 @@ public class SafetyEventService {
         this.repository = repository;
     }
 
+    public Mono<SafetyEvent> saveSystemEvent(String sourceAddr, String severity, String description) {
+        return repository.save(SafetyEvent.fromSystemEvent(sourceAddr, severity, description))
+                .doOnError(e -> log.error("[DB] System event kayit hatasi: {}", e.getMessage()));
+    }
+
     public Mono<SafetyEvent> save(String sourceAddr, byte[] rawData, String hex) {
         return repository.save(SafetyEvent.fromRaw(sourceAddr, rawData, hex))
                 .doOnSuccess(e -> log.debug("[DB] Event kaydedildi: {} type={} device={}",

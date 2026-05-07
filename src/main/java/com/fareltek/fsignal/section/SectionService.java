@@ -24,6 +24,10 @@ public class SectionService {
         return repository.findByEnabledTrue();
     }
 
+    public Mono<Section> findById(int id) {
+        return repository.findById(id);
+    }
+
     public Mono<Section> save(Section s) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         if (s.getId() == null) {

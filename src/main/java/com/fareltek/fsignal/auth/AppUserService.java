@@ -78,6 +78,11 @@ public class AppUserService {
         return repo.findByEmail(email);
     }
 
+    public Mono<AppUser> findById(UUID id) {
+        return repo.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Kullanıcı bulunamadı.")));
+    }
+
     public Flux<AppUser> findAll() {
         return repo.findAll();
     }
@@ -94,5 +99,27 @@ public class AppUserService {
         return repo.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Kullanıcı bulunamadı.")))
                 .flatMap(u -> { u.setRole(role); return repo.save(u); });
+    }
+
+    public Mono<AppUser> create(String fullName, String email, String rawPassword, String role) {
+        if (!VALID_ROLES.contains(role))
+            return Mono.error(new IllegalArgumentException("Geçersiz rol: " + role));
+        return repo.findByEmail(email)
+                .flatMap(existing -> Mono.<AppUser>error(new IllegalArgumentException("Bu kullanıcı adı zaten mevcut.")))
+                .switchIfEmpty(Mono.defer(() -> {
+                    AppUser u = AppUser.create(fullName, email, encoder.encode(rawPassword), role);
+                    u.setActive(true);
+                    return repo.save(u);
+                }));
+    }
+
+    public Mono<Void> delete(UUID id) {
+        return repo.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Kullanıcı bulunamadı.")))
+                .flatMap(u -> {
+                    if ("fareltek".equals(u.getEmail()))
+                        return Mono.<Void>error(new IllegalArgumentException("Sistem yöneticisi silinemez."));
+                    return repo.deleteById(id);
+                });
     }
 }

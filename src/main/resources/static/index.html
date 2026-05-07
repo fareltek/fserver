@@ -642,7 +642,35 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 <div class="view" id="view-users">
   <div class="sec-toolbar">
     <span class="sec-toolbar-title" id="usr-summary">Yükleniyor...</span>
+    <button class="btn success" onclick="toggleAddUserForm()">+ Kullanıcı Ekle</button>
     <button class="btn" onclick="loadUsers()">↻ Yenile</button>
+  </div>
+  <div id="add-user-panel" style="display:none;padding:14px 16px;background:var(--surface);border-bottom:1px solid var(--border)">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Ad Soyad</label>
+        <input id="nu-name" type="text" class="inp" placeholder="Ad Soyad" autocomplete="off" style="width:160px">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Kullanıcı Adı</label>
+        <input id="nu-email" type="text" class="inp" placeholder="kullanici_adi" autocomplete="off" style="width:140px">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Şifre</label>
+        <input id="nu-pass" type="password" class="inp" placeholder="Şifre" autocomplete="new-password" style="width:120px">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Rol</label>
+        <select id="nu-role" class="sel">
+          <option value="GUEST">GUEST</option>
+          <option value="OPERATOR">OPERATOR</option>
+          <option value="MANAGER">MANAGER</option>
+        </select>
+      </div>
+      <button class="btn success" onclick="doAddUser()">Ekle</button>
+      <button class="btn" onclick="toggleAddUserForm()">İptal</button>
+    </div>
+    <div id="nu-msg" style="margin-top:8px;font-size:11px"></div>
   </div>
   <div class="sec-body" id="usr-body">
     <div class="rpt-loading"><span class="spinner">⏳</span> Yükleniyor...</div>
@@ -1840,9 +1868,10 @@ function renderUsers(users) {
       ? '<span style="color:var(--green);font-size:10px">● Aktif</span>'
       : '<span style="color:var(--yellow);font-size:10px">⏳ Onay Bekliyor</span>';
     const lastLogin = u.lastLogin ? toLocalTime(u.lastLogin, true) : '—';
-    const actions = u.active
+    const toggleBtn = u.active
       ? `<button class="btn sm" style="color:var(--red)" onclick="userSetActive('${u.id}',false)">Devre Dışı</button>`
       : `<button class="btn sm success" onclick="userSetActive('${u.id}',true)">Onayla</button>`;
+    const deleteBtn = `<button class="btn sm" style="color:var(--red);margin-left:4px" onclick="userDelete('${u.id}','${esc(u.fullName)}')">Sil</button>`;
     const roleSelect = `<select class="sel" style="font-size:10px;padding:2px 6px"
         onchange="userSetRole('${u.id}',this.value)">
       <option value="GUEST"    ${u.role==='GUEST'   ?'selected':''}>GUEST</option>
@@ -1856,7 +1885,7 @@ function renderUsers(users) {
       <td style="padding:8px 12px">${activeBadge}</td>
       <td style="padding:8px 12px;font-size:10px;color:var(--muted)">${lastLogin}</td>
       <td style="padding:8px 12px">${roleSelect}</td>
-      <td style="padding:8px 12px">${actions}</td>
+      <td style="padding:8px 12px">${toggleBtn}${deleteBtn}</td>
     </tr>`;
   }).join('');
 
@@ -1892,6 +1921,51 @@ async function userSetRole(id, role) {
       body: JSON.stringify({role})
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
+    await loadUsers();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+function toggleAddUserForm() {
+  const panel = document.getElementById('add-user-panel');
+  const open  = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  if (open) {
+    document.getElementById('nu-name').value  = '';
+    document.getElementById('nu-email').value = '';
+    document.getElementById('nu-pass').value  = '';
+    document.getElementById('nu-msg').textContent = '';
+    document.getElementById('nu-name').focus();
+  }
+}
+
+async function doAddUser() {
+  const name  = document.getElementById('nu-name').value.trim();
+  const email = document.getElementById('nu-email').value.trim();
+  const pass  = document.getElementById('nu-pass').value;
+  const role  = document.getElementById('nu-role').value;
+  const msg   = document.getElementById('nu-msg');
+  msg.textContent = '';
+  if (!name)  { msg.style.color='var(--red)'; msg.textContent='Ad Soyad zorunlu.'; return; }
+  if (!email) { msg.style.color='var(--red)'; msg.textContent='Kullanıcı adı zorunlu.'; return; }
+  if (!pass)  { msg.style.color='var(--red)'; msg.textContent='Şifre zorunlu.'; return; }
+  try {
+    const r = await authFetch('/api/users', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({fullName:name, email, password:pass, role})
+    });
+    if (!r.ok) { const t = await r.text(); throw new Error(t); }
+    msg.style.color = 'var(--green)';
+    msg.textContent = 'Kullanıcı oluşturuldu.';
+    setTimeout(() => { toggleAddUserForm(); loadUsers(); }, 700);
+  } catch(e) { msg.style.color='var(--red)'; msg.textContent='Hata: ' + e.message; }
+}
+
+async function userDelete(id, name) {
+  if (!confirm(`"${name}" kullanıcısını silmek istiyor musunuz?`)) return;
+  try {
+    const r = await authFetch(`/api/users/${id}`, {method:'DELETE'});
+    if (!r.ok) { const t = await r.text(); throw new Error(t); }
     await loadUsers();
   } catch(e) { alert('Hata: ' + e.message); }
 }
