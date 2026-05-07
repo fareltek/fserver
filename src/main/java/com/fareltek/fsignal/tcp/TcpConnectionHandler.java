@@ -23,7 +23,8 @@ public class TcpConnectionHandler {
     private final SafetyEventService safetyEventService;
     private final Sinks.Many<TcpDataEvent> dataSink = Sinks.many().multicast().onBackpressureBuffer(100);
 
-    private final ConcurrentHashMap<Integer, SectionStats> sectionStats = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, SectionStats> sectionStats   = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, Long>         sectionLastSeq = new ConcurrentHashMap<>();
 
     public TcpConnectionHandler(SafetyEventService safetyEventService) {
         this.safetyEventService = safetyEventService;
@@ -60,6 +61,7 @@ public class TcpConnectionHandler {
         log.warn("[TCP][{}] Baglanti kesildi: {}", s.getName(), s.sourceAddr());
         SectionStats st = sectionStats.get(s.getId());
         if (st != null) { st.connected = false; st.connectedSince = null; }
+        sectionLastSeq.remove(s.getId());
         safetyEventService.saveSystemEvent(s.sourceAddr(), "WARNING",
                 "[" + s.getName() + "] TCP bağlantısı kesildi (" + s.sourceAddr() + ")").subscribe();
         emit(TcpDataEvent.connectionEvent(s.getId(), s.getName(), s.sourceAddr(), "DISCONNECTED"));
@@ -81,6 +83,7 @@ public class TcpConnectionHandler {
         if (pkt != null) {
             log.info("[TCP-DATA][{}] {} bytes type={} device={} cs={}", s.getName(),
                     data.length, pkt.messageType(), pkt.sourceId(), pkt.checksumValid());
+            checkSequenceReplay(s, pkt.sequence());
         } else {
             log.info("[TCP-DATA][{}] {} bytes (raw)", s.getName(), data.length);
         }
@@ -96,6 +99,27 @@ public class TcpConnectionHandler {
                         emit(TcpDataEvent.fromData(s.getId(), s.getName(), s.sourceAddr(), data, pkt, null));
                     }
                 );
+    }
+
+    private void checkSequenceReplay(Section s, int rawSeq) {
+        long newSeq = rawSeq & 0xFFFFFFFFL; // treat as unsigned
+        sectionLastSeq.compute(s.getId(), (k, lastSeq) -> {
+            if (lastSeq != null) {
+                long diff = lastSeq - newSeq;
+                // diff > 0 and not a wraparound (wraparound = newSeq near 0, lastSeq near max)
+                boolean backward   = newSeq <= lastSeq;
+                boolean wraparound = lastSeq > 0xF0000000L && newSeq < 0x10000000L;
+                if (backward && !wraparound) {
+                    log.warn("[TCP][{}] Tekrar sıra no tespit edildi: last={} yeni={} (diff={})",
+                            s.getName(), lastSeq, newSeq, diff);
+                    safetyEventService.saveSystemEvent(s.sourceAddr(), "WARNING",
+                            "[" + s.getName() + "] FA51 tekrar sıra numarası: "
+                            + "son=" + lastSeq + " yeni=" + newSeq
+                            + " — olası replay saldırısı").subscribe();
+                }
+            }
+            return Math.max(lastSeq != null ? lastSeq : 0L, newSeq);
+        });
     }
 
     public Flux<TcpDataEvent> getDataStream() {

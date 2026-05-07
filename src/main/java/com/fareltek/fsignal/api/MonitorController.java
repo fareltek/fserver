@@ -160,6 +160,7 @@ public class MonitorController {
     private Map<String, Object> toDto(SafetyEvent e) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id",             e.getId()          != null ? e.getId().toString()          : null);
+        m.put("sequenceNo",     e.getSequenceNo());
         m.put("eventTime",      e.getEventTime()   != null ? e.getEventTime().toString()   : null);
         m.put("receiveTime",    e.getReceiveTime() != null ? e.getReceiveTime().toString() : null);
         m.put("sourceAddr",     e.getSourceAddr());

@@ -2,8 +2,10 @@ package com.fareltek.fsignal.db;
 
 import com.fareltek.fsignal.tcp.Fa51Parser;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.ReadOnlyProperty;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Persistable;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.nio.ByteBuffer;
@@ -16,6 +18,10 @@ public class SafetyEvent implements Persistable<UUID> {
 
     @Id private UUID id;
     @Transient private boolean isNew;
+
+    @ReadOnlyProperty
+    @Column("sequence_no")
+    private Long sequenceNo;
 
     private OffsetDateTime eventTime;
     private OffsetDateTime receiveTime;
@@ -82,6 +88,7 @@ public class SafetyEvent implements Persistable<UUID> {
     @Override public UUID    getId()   { return id; }
     @Override public boolean isNew()   { return isNew; }
     public void setId(UUID id)         { this.id = id; }
+    public Long getSequenceNo()        { return sequenceNo; }
 
     public OffsetDateTime getEventTime()                        { return eventTime; }
     public void setEventTime(OffsetDateTime v)                  { this.eventTime = v; }

@@ -20,6 +20,12 @@ public interface SafetyEventRepository extends ReactiveCrudRepository<SafetyEven
 
     Mono<Long> countByAcknowledgedFalse();
 
+    Flux<SafetyEvent> findByEventTimeBeforeOrderByEventTimeAsc(OffsetDateTime cutoff);
+
+    @org.springframework.data.r2dbc.repository.Query(
+        "DELETE FROM safety_events WHERE event_time < :cutoff")
+    Mono<Void> purgeOlderThan(OffsetDateTime cutoff);
+
     @org.springframework.data.r2dbc.repository.Query(
         "SELECT DISTINCT (event_time AT TIME ZONE 'UTC')::date AS event_date " +
         "FROM safety_events ORDER BY event_date DESC")

@@ -17,10 +17,13 @@ public class AuthController {
 
     private final AppUserService     userService;
     private final SafetyEventService eventService;
+    private final LoginRateLimiter   rateLimiter;
 
-    public AuthController(AppUserService userService, SafetyEventService eventService) {
+    public AuthController(AppUserService userService, SafetyEventService eventService,
+                          LoginRateLimiter rateLimiter) {
         this.userService  = userService;
         this.eventService = eventService;
+        this.rateLimiter  = rateLimiter;
     }
 
     @PostMapping("/register")
@@ -51,6 +54,16 @@ public class AuthController {
         String ip        = extractIp(exchange.getRequest());
         String userAgent = parseUserAgent(exchange.getRequest().getHeaders().getFirst("User-Agent"));
         String clientInfo = "IP: " + ip + " | " + userAgent;
+
+        if (rateLimiter.isBlocked(ip)) {
+            int count = rateLimiter.getAttemptCount(ip);
+            return eventService.saveSystemEvent("SYSTEM", "WARNING",
+                            "IP engellendi (çok fazla deneme): " + ip
+                            + " — " + count + " deneme/dk | Hedef kullanıcı: " + email)
+                    .then(Mono.error(new ResponseStatusException(
+                            org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                            "Çok fazla giriş denemesi. 1 dakika bekleyin.")));
+        }
 
         return userService.login(email, req.password())
                 .flatMap(token -> eventService.saveSystemEvent("SYSTEM", "INFO",

@@ -62,6 +62,14 @@ public class SafetyEventService {
         return base;
     }
 
+    public Flux<SafetyEvent> getOlderThan(OffsetDateTime cutoff) {
+        return repository.findByEventTimeBeforeOrderByEventTimeAsc(cutoff);
+    }
+
+    public Mono<Void> deleteOlderThan(OffsetDateTime cutoff) {
+        return repository.purgeOlderThan(cutoff);
+    }
+
     public Mono<Long> getTotalCount() {
         return repository.count();
     }
