@@ -21,26 +21,29 @@ public record TcpDataEvent(
         Integer eventCode,
         Integer eventData,
         Integer eventFlags,
-        String  description
+        String  description,
+        // DB UUID (set after save, null for connection/heartbeat events)
+        String  dbId
 ) {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static final HexFormat HEX_FMT = HexFormat.ofDelimiter(" ").withUpperCase();
 
     public static TcpDataEvent fromData(Integer sectionId, String sectionName,
                                         String remoteAddr, byte[] data,
-                                        Fa51Parser.ParsedPacket pkt) {
+                                        Fa51Parser.ParsedPacket pkt, String dbId) {
         return new TcpDataEvent(
                 "DATA", LocalDateTime.now().format(FMT),
                 sectionId, sectionName, remoteAddr,
                 data.length, HEX_FMT.formatHex(data), toAscii(data),
-                pkt != null ? pkt.messageType()      : null,
-                pkt != null ? pkt.severity()         : null,
-                pkt != null ? pkt.sequence()         : null,
-                pkt != null ? pkt.sourceId()         : null,
+                pkt != null ? pkt.messageType()         : null,
+                pkt != null ? pkt.severity()            : null,
+                pkt != null ? pkt.sequence()            : null,
+                pkt != null ? pkt.sourceId()            : null,
                 pkt != null ? pkt.eventCode()           : null,
                 pkt != null ? pkt.eventData()           : null,
                 pkt != null ? pkt.eventFlags()          : null,
-                pkt != null ? Fa51Parser.describe(pkt)  : null
+                pkt != null ? Fa51Parser.describe(pkt)  : null,
+                dbId
         );
     }
 
@@ -48,13 +51,13 @@ public record TcpDataEvent(
                                                String remoteAddr, String type) {
         return new TcpDataEvent(type, LocalDateTime.now().format(FMT),
                 sectionId, sectionName, remoteAddr, 0, "", "",
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null);
     }
 
     public static TcpDataEvent heartbeat() {
         return new TcpDataEvent("HEARTBEAT", LocalDateTime.now().format(FMT),
                 null, null, null, 0, "", "",
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null);
     }
 
     private static String toAscii(byte[] data) {

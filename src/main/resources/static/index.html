@@ -699,7 +699,7 @@ function addLiveRow(ev) {
     description: desc,
     acknowledged: false,
     acknowledgedBy: null, acknowledgedTime: null,
-    id: null
+    id: ev.dbId || null
   });
 }
 
@@ -1106,11 +1106,8 @@ function renderReportTable(data) {
       const when = e.acknowledgedTime ? toLocalTime(e.acknowledgedTime, true) : '';
       ackTxt = `<span class="badge b-ack" style="white-space:normal;font-size:9px">✓ ${esc(by)}<br><span style="font-size:8px;color:var(--muted)">${esc(when)}</span></span>`;
     } else {
-      ackTxt = e.id ? `<button class="btn sm" onclick="ackEventReport('${e.id}',this)">Onayla</button>` : '<span class="badge b-unack">Bekliyor</span>';
+      ackTxt = '<span class="badge b-unack">Bekliyor</span>';
     }
-    const ack  = e.acknowledged
-      ? '<span class="badge b-ack">✓ Onaylı</span>'
-      : (e.id ? `<button class="btn sm" onclick="ackEventReport('${e.id}',this)">Onayla</button>` : '<span class="badge b-unack">Bekliyor</span>');
     let rowStyle='';
     if(sev==='CRITICAL') rowStyle='background:var(--red-bg)';
     else if(sev==='ALARM') rowStyle='background:var(--red-bg);opacity:.85';

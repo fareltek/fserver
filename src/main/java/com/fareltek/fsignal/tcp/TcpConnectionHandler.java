@@ -63,7 +63,6 @@ public class TcpConnectionHandler {
 
     public void onData(Section s, byte[] data) {
         Fa51Parser.ParsedPacket pkt = Fa51Parser.parse(data);
-        TcpDataEvent event = TcpDataEvent.fromData(s.getId(), s.getName(), s.sourceAddr(), data, pkt);
 
         SectionStats st = sectionStats.computeIfAbsent(s.getId(), k -> new SectionStats());
         st.packets.incrementAndGet();
@@ -72,14 +71,22 @@ public class TcpConnectionHandler {
 
         if (pkt != null) {
             log.info("[TCP-DATA][{}] {} bytes type={} device={} cs={}", s.getName(),
-                    event.byteCount(), pkt.messageType(), pkt.sourceId(), pkt.checksumValid());
+                    data.length, pkt.messageType(), pkt.sourceId(), pkt.checksumValid());
         } else {
-            log.info("[TCP-DATA][{}] {} bytes (raw) | {}", s.getName(), event.byteCount(), event.hex());
+            log.info("[TCP-DATA][{}] {} bytes (raw)", s.getName(), data.length);
         }
 
-        emit(event);
-        safetyEventService.save(s.sourceAddr(), data, event.hex())
-                .subscribe(null, e -> log.error("[DB] Kayit hatasi: {}", e.getMessage()));
+        safetyEventService.save(s.sourceAddr(), data, null)
+                .subscribe(
+                    saved -> {
+                        String dbId = saved.getId() != null ? saved.getId().toString() : null;
+                        emit(TcpDataEvent.fromData(s.getId(), s.getName(), s.sourceAddr(), data, pkt, dbId));
+                    },
+                    e -> {
+                        log.error("[DB] Kayit hatasi: {}", e.getMessage());
+                        emit(TcpDataEvent.fromData(s.getId(), s.getName(), s.sourceAddr(), data, pkt, null));
+                    }
+                );
     }
 
     public Flux<TcpDataEvent> getDataStream() {

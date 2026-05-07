@@ -56,7 +56,8 @@ public class SafetyEvent implements Persistable<UUID> {
         } else {
             e.messageType = "RAW_DATA";
             e.severity    = "INFO";
-            e.description = rawData.length + " byte: " + (hex.length() > 80 ? hex.substring(0, 80) + "…" : hex);
+            String h = hex != null ? hex : java.util.HexFormat.ofDelimiter(" ").withUpperCase().formatHex(rawData);
+            e.description = rawData.length + " byte: " + (h.length() > 80 ? h.substring(0, 80) + "…" : h);
         }
         e.eventTime = OffsetDateTime.now(ZoneOffset.UTC);
         return e;
