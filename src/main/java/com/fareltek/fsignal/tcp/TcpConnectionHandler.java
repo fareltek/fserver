@@ -71,8 +71,8 @@ public class TcpConnectionHandler {
         st.lastPacket = Instant.now();
 
         if (pkt != null) {
-            log.info("[TCP-DATA][{}] {} seq={} type={} cs={}", s.getName(),
-                    event.byteCount(), pkt.sequence(), pkt.messageType(), pkt.checksumValid());
+            log.info("[TCP-DATA][{}] {} bytes type={} device={} cs={}", s.getName(),
+                    event.byteCount(), pkt.messageType(), pkt.sourceId(), pkt.checksumValid());
         } else {
             log.info("[TCP-DATA][{}] {} bytes (raw) | {}", s.getName(), event.byteCount(), event.hex());
         }

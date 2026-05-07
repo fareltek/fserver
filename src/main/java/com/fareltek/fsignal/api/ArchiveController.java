@@ -5,7 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -17,8 +19,10 @@ import java.io.RandomAccessFile;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.*;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping("/api/archive")
@@ -62,6 +66,64 @@ public class ArchiveController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    /** All event dates from DB + whether a pre-built CSV file exists for each */
+    @GetMapping("/dates")
+    public Flux<Map<String, Object>> eventDates() {
+        Path eventsDir = Paths.get(archivePath).toAbsolutePath().normalize().resolve("events");
+        return repository.findDistinctEventDates()
+                .map(date -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("date", date.toString());
+                    String fileName = "events-" + date + ".csv";
+                    Path filePath = eventsDir.resolve(fileName);
+                    boolean fileExists = Files.exists(filePath);
+                    m.put("hasFile", fileExists);
+                    if (fileExists) {
+                        try {
+                            m.put("size", Files.size(filePath));
+                        } catch (IOException ignored) {}
+                        m.put("filePath", "events/" + fileName);
+                    }
+                    return m;
+                });
+    }
+
+    /** Live log SSE: streams new lines appended to logs/fsignal.log */
+    @GetMapping(value = "/live-log", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> liveLog() {
+        Path logFile = Paths.get(archivePath).toAbsolutePath().normalize()
+                .resolve("logs/fsignal.log");
+        AtomicLong offset = new AtomicLong(
+                Files.exists(logFile) ? logFile.toFile().length() : 0L);
+
+        return Flux.interval(Duration.ofSeconds(1))
+                .subscribeOn(Schedulers.boundedElastic())
+                .publishOn(Schedulers.boundedElastic())
+                .flatMapIterable(tick -> {
+                    List<String> lines = new ArrayList<>();
+                    if (!Files.exists(logFile)) return lines;
+                    try (RandomAccessFile raf = new RandomAccessFile(logFile.toFile(), "r")) {
+                        long len = raf.length();
+                        long pos = offset.get();
+                        if (len < pos) { offset.set(0); pos = 0; } // rotated
+                        if (len <= pos) return lines;
+                        raf.seek(pos);
+                        byte[] buf = new byte[(int)(len - pos)];
+                        raf.readFully(buf);
+                        offset.set(len);
+                        String chunk = new String(buf, java.nio.charset.StandardCharsets.UTF_8);
+                        for (String line : chunk.split("\n")) {
+                            String trimmed = line.stripTrailing();
+                            if (!trimmed.isEmpty()) lines.add(trimmed);
+                        }
+                    } catch (IOException e) {
+                        log.warn("[LiveLog] Okuma hatasi: {}", e.getMessage());
+                    }
+                    return lines;
+                })
+                .map(line -> ServerSentEvent.<String>builder().data(line).build());
+    }
+
     /** On-demand CSV export for any date (default: today) */
     @GetMapping("/export")
     public Mono<ResponseEntity<byte[]>> exportDate(
@@ -88,7 +150,7 @@ public class ArchiveController {
     private byte[] buildCsvBytes(java.util.List<SafetyEvent> events) {
         StringBuilder sb = new StringBuilder(
                 "﻿id,event_time,source_addr,severity,message_type," +
-                "sequence,source_id,event_code,event_data,event_flags," +
+                "device_type,device_id,event_code,event_data,event_flags," +
                 "description,acknowledged,acknowledged_by\r\n");
         for (SafetyEvent e : events) {
             sb.append(nvl(e.getId())).append(',')
@@ -96,8 +158,8 @@ public class ArchiveController {
               .append(nvl(e.getSourceAddr())).append(',')
               .append(nvl(e.getSeverity())).append(',')
               .append(nvl(e.getMessageType())).append(',')
-              .append(nvl(e.getSequence())).append(',')
-              .append(nvl(e.getSourceId())).append(',')
+              .append(nvl(e.getDeviceType())).append(',')
+              .append(nvl(e.getDeviceId())).append(',')
               .append(nvl(e.getEventCode())).append(',')
               .append(nvl(e.getEventData())).append(',')
               .append(nvl(e.getEventFlags())).append(',')

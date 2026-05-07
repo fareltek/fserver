@@ -14,7 +14,6 @@ services:
       DB_USER:     ${DB_USER:-fareltek}
       DB_PASS:     ${DB_PASS:-2580}
       ARCHIVE_PATH: /archive
-      TCP_READ_TIMEOUT: ${TCP_READ_TIMEOUT:-300}
     volumes:
       - /archive:/archive
     restart: unless-stopped

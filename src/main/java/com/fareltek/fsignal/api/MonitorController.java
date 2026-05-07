@@ -147,8 +147,6 @@ public class MonitorController {
         m.put("sourceAddr",     e.getSourceAddr());
         m.put("severity",       e.getSeverity());
         m.put("messageType",    e.getMessageType());
-        m.put("sequence",       e.getSequence());
-        m.put("sourceId",       e.getSourceId());
         m.put("deviceType",     e.getDeviceType());
         m.put("eventCode",      e.getEventCode());
         m.put("eventData",      e.getEventData());

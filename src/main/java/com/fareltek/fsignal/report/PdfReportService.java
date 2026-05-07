@@ -224,13 +224,13 @@ public class PdfReportService {
         heading.setSpacingAfter(4);
         doc.add(heading);
 
-        // Columns: #, Zaman, Kaynak, Ciddiyet, Tip, Seq, Kod, Hex (kısaltılmış), Onay
+        // Columns: #, Zaman, Kaynak, Ciddiyet, Tip, CihazID, Kod, Hex (kısaltılmış), Onay
         PdfPTable table = new PdfPTable(9);
         table.setWidthPercentage(100);
         table.setWidths(new float[]{0.6f, 2.5f, 2.2f, 1.3f, 1.3f, 1f, 0.8f, 3.5f, 0.8f});
         table.setHeaderRows(1);
 
-        String[] headers = {"#", "Zaman (UTC)", "Kaynak", "Ciddiyet", "Tip", "Seq", "Kod", "Hex / Açıklama", "Onay"};
+        String[] headers = {"#", "Zaman (UTC)", "Kaynak", "Ciddiyet", "Tip", "CihazID", "Kod", "Hex / Açıklama", "Onay"};
         for (String h : headers) {
             PdfPCell hCell = new PdfPCell(new Phrase(h, new Font(bfBold, 7, Font.BOLD, Color.WHITE)));
             hCell.setBackgroundColor(COL_DARK_BLUE);
@@ -254,16 +254,16 @@ public class PdfReportService {
                         ? e.getDescription().substring(0, 40) + "…"
                         : e.getDescription())
                     : "—";
-            String seq  = e.getSequence()  != null ? String.valueOf(e.getSequence())  : "—";
-            String code = e.getEventCode() != null ? "0x" + Integer.toHexString(e.getEventCode()).toUpperCase() : "—";
-            String ack  = Boolean.TRUE.equals(e.getAcknowledged()) ? "Evet" : "Hayir";
+            String devId = e.getDeviceId() != null ? String.valueOf(e.getDeviceId()) : "—";
+            String code  = e.getEventCode() != null ? "0x" + Integer.toHexString(e.getEventCode()).toUpperCase() : "—";
+            String ack   = Boolean.TRUE.equals(e.getAcknowledged()) ? "Evet" : "Hayir";
 
             addTableCell(table, String.valueOf(i + 1),              rowBg, bfNorm, 7, Element.ALIGN_RIGHT);
             addTableCell(table, dt,                                  rowBg, bfNorm, 7, Element.ALIGN_LEFT);
             addTableCell(table, e.getSourceAddr() != null ? e.getSourceAddr() : "—", rowBg, bfNorm, 7, Element.ALIGN_LEFT);
             addTableCell(table, sev,                                 rowBg, bfBold, 7, Element.ALIGN_CENTER);
             addTableCell(table, e.getMessageType() != null ? e.getMessageType() : "—", rowBg, bfNorm, 7, Element.ALIGN_CENTER);
-            addTableCell(table, seq,                                 rowBg, bfNorm, 7, Element.ALIGN_RIGHT);
+            addTableCell(table, devId,                               rowBg, bfNorm, 7, Element.ALIGN_RIGHT);
             addTableCell(table, code,                                rowBg, bfNorm, 7, Element.ALIGN_CENTER);
             addTableCell(table, hex,                                 rowBg, bfNorm, 6, Element.ALIGN_LEFT);
             addTableCell(table, ack,                                 rowBg, bfNorm, 7, Element.ALIGN_CENTER);

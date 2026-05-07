@@ -2,14 +2,12 @@ package com.fareltek.fsignal.tcp;
 
 import com.fareltek.fsignal.section.Section;
 import io.netty.channel.ChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.netty.tcp.TcpClient;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TcpDeviceClient {
@@ -19,14 +17,12 @@ public class TcpDeviceClient {
 
     private final Section section;
     private final TcpConnectionHandler handler;
-    private final int readTimeoutSeconds;
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicBoolean connected = new AtomicBoolean(false);
 
-    public TcpDeviceClient(Section section, TcpConnectionHandler handler, int readTimeoutSeconds) {
+    public TcpDeviceClient(Section section, TcpConnectionHandler handler) {
         this.section = section;
         this.handler = handler;
-        this.readTimeoutSeconds = readTimeoutSeconds;
     }
 
     public void start() {
@@ -53,7 +49,6 @@ public class TcpDeviceClient {
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
                 .doOnConnected(conn -> {
-                    conn.addHandlerLast(new ReadTimeoutHandler(readTimeoutSeconds, TimeUnit.SECONDS));
                     connected.set(true);
                     handler.onConnected(section);
                 })

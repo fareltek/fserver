@@ -22,8 +22,8 @@ public class SafetyEventService {
 
     public Mono<SafetyEvent> save(String sourceAddr, byte[] rawData, String hex) {
         return repository.save(SafetyEvent.fromRaw(sourceAddr, rawData, hex))
-                .doOnSuccess(e -> log.debug("[DB] Event kaydedildi: {} seq={} type={}",
-                        e.getId(), e.getSequence(), e.getMessageType()))
+                .doOnSuccess(e -> log.debug("[DB] Event kaydedildi: {} type={} device={}",
+                        e.getId(), e.getMessageType(), e.getDeviceId()))
                 .doOnError(e -> log.error("[DB] Kayit hatasi: {}", e.getMessage()));
     }
 

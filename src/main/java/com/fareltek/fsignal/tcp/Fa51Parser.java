@@ -38,10 +38,10 @@ public class Fa51Parser {
         boolean csOk = (xor == raw[10 + dataLen]);
 
         String msgType = switch (type) {
-            case 0x01 -> "DATA";
-            case 0x02 -> "WARNING";
-            case 0x03 -> "ALARM";
-            case 0x04 -> "CRITICAL";
+            case 0x01 -> "PERIODIC";
+            case 0x02 -> "HARDWARE";
+            case 0x03 -> "HARDWARE";
+            case 0x04 -> "HARDWARE";
             case 0x05 -> "HEARTBEAT";
             default   -> "UNKNOWN";
         };
@@ -69,8 +69,7 @@ public class Fa51Parser {
             default         -> pkt.messageType();
         };
         var sb = new StringBuilder(prefix)
-                .append(": KaynakID=").append(pkt.sourceId())
-                .append(", Sıra=").append(pkt.sequence());
+                .append(": CihazID=").append(pkt.sourceId());
         if (pkt.eventCode()  != null) sb.append(", Kod=0x").append(String.format("%02X", pkt.eventCode()));
         if (pkt.eventData()  != null) sb.append(", Veri=0x").append(String.format("%02X", pkt.eventData()));
         if (pkt.eventFlags() != null && pkt.eventFlags() != 0)

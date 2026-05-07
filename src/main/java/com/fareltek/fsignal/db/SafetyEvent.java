@@ -20,8 +20,6 @@ public class SafetyEvent implements Persistable<UUID> {
     private OffsetDateTime eventTime;
     private OffsetDateTime receiveTime;
     private String  sourceAddr;
-    private Integer sequence;
-    private Integer sourceId;
     private String  messageType;
     private String  deviceType;
     private Integer deviceId;
@@ -49,8 +47,7 @@ public class SafetyEvent implements Persistable<UUID> {
         if (pkt != null) {
             e.messageType = pkt.messageType();
             e.severity    = pkt.severity();
-            e.sourceId    = pkt.sourceId();
-            e.sequence    = pkt.sequence();
+            e.deviceId    = pkt.sourceId();
             e.eventCode   = pkt.eventCode();
             e.eventData   = pkt.eventData();
             e.eventFlags  = pkt.eventFlags();
@@ -75,10 +72,6 @@ public class SafetyEvent implements Persistable<UUID> {
     public void setReceiveTime(OffsetDateTime v)                { this.receiveTime = v; }
     public String  getSourceAddr()                              { return sourceAddr; }
     public void setSourceAddr(String v)                         { this.sourceAddr = v; }
-    public Integer getSequence()                                { return sequence; }
-    public void setSequence(Integer v)                          { this.sequence = v; }
-    public Integer getSourceId()                                { return sourceId; }
-    public void setSourceId(Integer v)                          { this.sourceId = v; }
     public String  getMessageType()                             { return messageType; }
     public void setMessageType(String v)                        { this.messageType = v; }
     public String  getDeviceType()                              { return deviceType; }

@@ -19,4 +19,9 @@ public interface SafetyEventRepository extends ReactiveCrudRepository<SafetyEven
     Flux<SafetyEvent> findByEventTimeBetweenOrderByEventTimeDesc(OffsetDateTime from, OffsetDateTime to);
 
     Mono<Long> countByAcknowledgedFalse();
+
+    @org.springframework.data.r2dbc.repository.Query(
+        "SELECT DISTINCT (event_time AT TIME ZONE 'UTC')::date AS event_date " +
+        "FROM safety_events ORDER BY event_date DESC")
+    Flux<java.time.LocalDate> findDistinctEventDates();
 }

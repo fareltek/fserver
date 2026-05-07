@@ -60,19 +60,18 @@ public class ArchiveService {
                     try (PrintWriter pw = new PrintWriter(new BufferedWriter(
                             new FileWriter(csvPath.toFile(), java.nio.charset.StandardCharsets.UTF_8)))) {
                         pw.println("id,event_time,receive_time,source_addr,severity,message_type," +
-                                   "sequence,source_id,device_type,event_code,event_data,event_flags," +
+                                   "device_type,device_id,event_code,event_data,event_flags," +
                                    "description,acknowledged,acknowledged_by,acknowledged_time");
                         for (var e : events) {
-                            pw.printf("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\"%s\",%s,%s,%s%n",
+                            pw.printf("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\"%s\",%s,%s,%s%n",
                                     nvl(e.getId()),
                                     nvl(e.getEventTime()),
                                     nvl(e.getReceiveTime()),
                                     nvl(e.getSourceAddr()),
                                     nvl(e.getSeverity()),
                                     nvl(e.getMessageType()),
-                                    nvl(e.getSequence()),
-                                    nvl(e.getSourceId()),
                                     nvl(e.getDeviceType()),
+                                    nvl(e.getDeviceId()),
                                     nvl(e.getEventCode()),
                                     nvl(e.getEventData()),
                                     nvl(e.getEventFlags()),
