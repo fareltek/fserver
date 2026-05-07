@@ -40,6 +40,7 @@ public class PdfReportService {
 
             addCoverSection(doc, writer, from, to, severity, sourceAddr, messageType, acknowledged, events);
             addStatisticsSection(doc, events);
+            doc.newPage();
             addEventTable(doc, events);
             doc.newPage();
             addComplianceSection(doc);
