@@ -15,5 +15,8 @@ services:
       DB_PASS:     ${DB_PASS:-2580}
       ARCHIVE_PATH: /archive
     volumes:
-      - /archive:/archive
+      - fsignal-archive:/archive
     restart: unless-stopped
+
+volumes:
+  fsignal-archive:
