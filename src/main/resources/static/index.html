@@ -384,23 +384,20 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
     </div>
     <div class="auth-sub">TRAMWAY SIGNALIZATION SYSTEM · EN50129</div>
 
-    <div class="auth-tabs">
-      <div class="auth-tab active" id="atab-login"    onclick="switchAuthTab('login')">Giriş Yap</div>
-      <div class="auth-tab"        id="atab-register" onclick="switchAuthTab('register')">Kayıt Ol</div>
-    </div>
-
-    <!-- ── LOGIN ── -->
-    <div class="auth-form active" id="aform-login">
+    <div class="auth-form active" id="aform-login" style="margin-top:8px">
       <div class="auth-fg">
-        <label class="auth-label">E-Posta</label>
-        <input class="auth-input" id="login-email" type="email"
-               placeholder="ornek@firma.com" autocomplete="username">
+        <label class="auth-label">Kullanıcı Adı</label>
+        <input class="auth-input" id="login-email" type="text"
+               placeholder="Kullanıcı adınız"
+               autocomplete="off" spellcheck="false"
+               onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div class="auth-fg">
         <label class="auth-label">Şifre</label>
         <div class="auth-input-wrap">
           <input class="auth-input has-toggle" id="login-pass" type="password"
-                 placeholder="••••••••" autocomplete="current-password"
+                 placeholder="••••••••"
+                 autocomplete="new-password"
                  onkeydown="if(event.key==='Enter')doLogin()">
           <button type="button" class="auth-eye" tabindex="-1"
                   onclick="togglePassVis('login-pass',this)" title="Şifreyi göster">◉</button>
@@ -408,57 +405,6 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
       </div>
       <button class="auth-btn" id="login-btn" onclick="doLogin()">Giriş Yap</button>
       <div class="auth-msg" id="login-msg"></div>
-    </div>
-
-    <!-- ── REGISTER ── -->
-    <div class="auth-form" id="aform-register">
-      <div class="auth-row">
-        <div class="auth-fg">
-          <label class="auth-label">Ad</label>
-          <input class="auth-input" id="reg-firstname" type="text"
-                 placeholder="Adınız" autocomplete="given-name">
-        </div>
-        <div class="auth-fg">
-          <label class="auth-label">Soyad</label>
-          <input class="auth-input" id="reg-lastname" type="text"
-                 placeholder="Soyadınız" autocomplete="family-name">
-        </div>
-      </div>
-      <div class="auth-fg">
-        <label class="auth-label">E-Posta</label>
-        <input class="auth-input" id="reg-email" type="email"
-               placeholder="ornek@firma.com" autocomplete="username">
-      </div>
-      <div class="auth-fg">
-        <label class="auth-label">Şifre</label>
-        <div class="auth-input-wrap">
-          <input class="auth-input has-toggle" id="reg-pass" type="password"
-                 placeholder="En az 8 karakter" autocomplete="new-password"
-                 oninput="checkPassStrength(this.value)">
-          <button type="button" class="auth-eye" tabindex="-1"
-                  onclick="togglePassVis('reg-pass',this)" title="Şifreyi göster">◉</button>
-        </div>
-        <div class="auth-hint" id="reg-strength"></div>
-      </div>
-      <div class="auth-fg">
-        <label class="auth-label">Şifre Tekrar</label>
-        <div class="auth-input-wrap">
-          <input class="auth-input has-toggle" id="reg-pass2" type="password"
-                 placeholder="Şifrenizi tekrar girin" autocomplete="new-password">
-          <button type="button" class="auth-eye" tabindex="-1"
-                  onclick="togglePassVis('reg-pass2',this)" title="Şifreyi göster">◉</button>
-        </div>
-      </div>
-      <div class="auth-fg">
-        <label class="auth-label">Talep Edilen Yetki</label>
-        <select class="auth-select" id="reg-role">
-          <option value="GUEST">GUEST — Sadece görüntüleme</option>
-          <option value="OPERATOR">OPERATOR — Alarm onaylama</option>
-        </select>
-        <div class="auth-hint">Yönetici onayı sonrası hesabınız aktif edilecektir.</div>
-      </div>
-      <button class="auth-btn" id="reg-btn" onclick="doRegister()">Kayıt Ol</button>
-      <div class="auth-msg" id="reg-msg"></div>
     </div>
   </div>
 </div>
@@ -759,15 +705,6 @@ function hideAuthOverlay() {
   document.getElementById('auth-overlay').classList.add('hidden');
 }
 
-function switchAuthTab(tab) {
-  document.getElementById('atab-login').classList.toggle('active',    tab==='login');
-  document.getElementById('atab-register').classList.toggle('active', tab==='register');
-  document.getElementById('aform-login').classList.toggle('active',    tab==='login');
-  document.getElementById('aform-register').classList.toggle('active', tab==='register');
-  document.getElementById('login-msg').style.display = 'none';
-  document.getElementById('reg-msg').style.display   = 'none';
-}
-
 function togglePassVis(inputId, btn) {
   const inp = document.getElementById(inputId);
   const show = inp.type === 'password';
@@ -776,20 +713,6 @@ function togglePassVis(inputId, btn) {
   btn.title = show ? 'Şifreyi gizle' : 'Şifreyi göster';
 }
 
-function checkPassStrength(val) {
-  const el = document.getElementById('reg-strength');
-  if (!val) { el.textContent = ''; return; }
-  let score = 0;
-  if (val.length >= 8)  score++;
-  if (val.length >= 12) score++;
-  if (/[A-Z]/.test(val)) score++;
-  if (/[0-9]/.test(val)) score++;
-  if (/[^A-Za-z0-9]/.test(val)) score++;
-  const levels = ['','Çok zayıf','Zayıf','Orta','Güçlü','Çok güçlü'];
-  const colors = ['','#f85149','#fb8500','#d29922','#3fb950','#3fb950'];
-  el.textContent = levels[score] || '';
-  el.style.color = colors[score] || '';
-}
 
 function showAuthMsg(id, msg, isError) {
   const el = document.getElementById(id);
@@ -801,7 +724,7 @@ function showAuthMsg(id, msg, isError) {
 async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value;
-  if (!email || !pass) { showAuthMsg('login-msg', 'E-posta ve şifre girin.', true); return; }
+  if (!email || !pass) { showAuthMsg('login-msg', 'Kullanıcı adı ve şifre girin.', true); return; }
   const btn = document.getElementById('login-btn');
   btn.disabled = true; btn.textContent = '⏳ Giriş yapılıyor...';
   try {
@@ -820,42 +743,6 @@ async function doLogin() {
     await initApp();
   } catch(e) { showAuthMsg('login-msg', e.message, true); }
   finally { btn.disabled = false; btn.textContent = 'Giriş Yap'; }
-}
-
-async function doRegister() {
-  const firstName = document.getElementById('reg-firstname').value.trim();
-  const lastName  = document.getElementById('reg-lastname').value.trim();
-  const email     = document.getElementById('reg-email').value.trim();
-  const pass      = document.getElementById('reg-pass').value;
-  const pass2     = document.getElementById('reg-pass2').value;
-  const role      = document.getElementById('reg-role').value;
-  const name      = (firstName + ' ' + lastName).trim();
-  if (!firstName)      { showAuthMsg('reg-msg', 'Ad alanı zorunludur.', true); return; }
-  if (!lastName)       { showAuthMsg('reg-msg', 'Soyad alanı zorunludur.', true); return; }
-  if (!email)          { showAuthMsg('reg-msg', 'E-posta zorunludur.', true); return; }
-  if (pass.length < 8) { showAuthMsg('reg-msg', 'Şifre en az 8 karakter olmalı.', true); return; }
-  if (pass !== pass2)  { showAuthMsg('reg-msg', 'Şifreler eşleşmiyor.', true); return; }
-  const btn = document.getElementById('reg-btn');
-  btn.disabled = true; btn.textContent = '⏳ Kayıt oluşturuluyor...';
-  try {
-    const r = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fullName: name, email, password: pass, role })
-    });
-    if (!r.ok) {
-      const err = await r.text();
-      showAuthMsg('reg-msg', err || 'Kayıt başarısız.', true);
-      return;
-    }
-    const d = await r.json();
-    const msg = d.role === 'MANAGER'
-      ? 'Kayıt başarılı! Giriş yapabilirsiniz.'
-      : 'Kayıt talebiniz alındı. Yönetici onayından sonra giriş yapabilirsiniz.';
-    showAuthMsg('reg-msg', msg, false);
-    if (d.role === 'MANAGER') setTimeout(() => switchAuthTab('login'), 1500);
-  } catch(e) { showAuthMsg('reg-msg', e.message, true); }
-  finally { btn.disabled = false; btn.textContent = 'Kayıt Ol'; }
 }
 
 function doLogout() {
