@@ -32,7 +32,7 @@ public class PdfReportService {
                            String messageType, Boolean acknowledged) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Document doc = new Document(PageSize.A4, 36, 36, 40, 40);
+            Document doc = new Document(PageSize.A4.rotate(), 30, 30, 36, 36);
             PdfWriter writer = PdfWriter.getInstance(doc, baos);
 
             writer.setPageEvent(new PageFooter(writer));
@@ -227,15 +227,15 @@ public class PdfReportService {
         // Zaman, BolgeAdi, BolgeIP, Ciddiyet, Mesaj Tipi, Cihaz Tipi, CihazID, Kod, Aciklama, Onay
         PdfPTable table = new PdfPTable(10);
         table.setWidthPercentage(100);
-        table.setWidths(new float[]{2.2f, 1.8f, 2.0f, 1.2f, 1.2f, 1.3f, 0.7f, 0.8f, 3.2f, 2.0f});
+        table.setWidths(new float[]{2.4f, 1.6f, 2.0f, 1.1f, 1.4f, 1.2f, 0.7f, 0.9f, 3.8f, 1.9f});
         table.setHeaderRows(1);
 
         String[] headers = {"Zaman", "Bolge Adi", "Bolge IP", "Ciddiyet", "Mesaj Tipi",
                             "Cihaz Tipi", "CihazID", "Kod", "Aciklama", "Onay"};
         for (String h : headers) {
-            PdfPCell hCell = new PdfPCell(new Phrase(h, new Font(bfBold, 7, Font.BOLD, Color.WHITE)));
+            PdfPCell hCell = new PdfPCell(new Phrase(h, new Font(bfBold, 6, Font.BOLD, Color.WHITE)));
             hCell.setBackgroundColor(COL_DARK_BLUE);
-            hCell.setPadding(5);
+            hCell.setPadding(4);
             hCell.setHorizontalAlignment(Element.ALIGN_CENTER);
             table.addCell(hCell);
         }
@@ -266,14 +266,14 @@ public class PdfReportService {
                 ack = "Bekliyor";
             }
 
-            addTableCell(table, dt,      rowBg, bfNorm, 7, Element.ALIGN_LEFT);
-            addTableCell(table, "—",     rowBg, bfNorm, 7, Element.ALIGN_LEFT);   // BolgeAdi (not in DB)
-            addTableCell(table, bolgIp,  rowBg, bfNorm, 7, Element.ALIGN_LEFT);
-            addTableCell(table, sev,     rowBg, bfBold, 7, Element.ALIGN_CENTER);
-            addTableCell(table, e.getMessageType() != null ? e.getMessageType() : "—", rowBg, bfNorm, 7, Element.ALIGN_CENTER);
-            addTableCell(table, devType, rowBg, bfNorm, 7, Element.ALIGN_CENTER);
-            addTableCell(table, devId,   rowBg, bfNorm, 7, Element.ALIGN_RIGHT);
-            addTableCell(table, code,    rowBg, bfNorm, 7, Element.ALIGN_CENTER);
+            addTableCell(table, dt,      rowBg, bfNorm, 6, Element.ALIGN_LEFT);
+            addTableCell(table, "—",     rowBg, bfNorm, 6, Element.ALIGN_LEFT);
+            addTableCell(table, bolgIp,  rowBg, bfNorm, 6, Element.ALIGN_LEFT);
+            addTableCell(table, sev,     rowBg, bfBold, 6, Element.ALIGN_CENTER);
+            addTableCell(table, e.getMessageType() != null ? e.getMessageType() : "—", rowBg, bfNorm, 6, Element.ALIGN_CENTER);
+            addTableCell(table, devType, rowBg, bfNorm, 6, Element.ALIGN_CENTER);
+            addTableCell(table, devId,   rowBg, bfNorm, 6, Element.ALIGN_RIGHT);
+            addTableCell(table, code,    rowBg, bfNorm, 6, Element.ALIGN_CENTER);
             addTableCell(table, desc,    rowBg, bfNorm, 6, Element.ALIGN_LEFT);
             addTableCell(table, ack,     rowBg, bfNorm, 6, Element.ALIGN_CENTER);
         }
@@ -286,7 +286,7 @@ public class PdfReportService {
         PdfPCell cell = new PdfPCell(new Phrase(text, new Font(bf, size, Font.NORMAL, COL_TEXT)));
         cell.setBackgroundColor(bg);
         cell.setBorderColor(new Color(226, 232, 240));
-        cell.setPadding(4);
+        cell.setPadding(3);
         cell.setHorizontalAlignment(align);
         table.addCell(cell);
     }
