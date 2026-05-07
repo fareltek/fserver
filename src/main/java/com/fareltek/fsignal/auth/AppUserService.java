@@ -27,7 +27,8 @@ public class AppUserService {
     }
 
     public Mono<AppUser> register(String fullName, String email, String rawPassword, String requestedRole) {
-        String role = VALID_ROLES.contains(requestedRole) ? requestedRole : "GUEST";
+        // MANAGER role cannot be self-assigned via registration
+        String role = ("OPERATOR".equals(requestedRole)) ? "OPERATOR" : "GUEST";
         return repo.findByEmail(email)
                 .flatMap(existing -> Mono.<AppUser>error(new IllegalArgumentException("Bu e-posta zaten kayıtlı.")))
                 .switchIfEmpty(
