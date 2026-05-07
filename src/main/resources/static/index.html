@@ -52,14 +52,14 @@ body { background:var(--bg); color:var(--text); font-family:'Consolas','Monaco',
 
 /* ── HEADER ──────────────────────────────────────────────────────────────── */
 header { background:var(--surface); border-bottom:1px solid var(--border); padding:0 20px;
-         display:flex; align-items:center; gap:12px; height:48px; flex-shrink:0; }
+         display:flex; align-items:center; gap:12px; height:48px; flex-shrink:0; position:relative; }
 .hdr-logo { display:flex; align-items:center; gap:10px; }
 .hdr-logo h1 { font-size:15px; font-weight:700; color:var(--blue); letter-spacing:1.5px; }
 .hdr-logo .sub { color:var(--muted); font-size:9px; margin-top:1px; letter-spacing:.5px; }
 .sil-badge { background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue);
              font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px; letter-spacing:.5px; }
 .hdr-right { margin-left:auto; display:flex; align-items:center; gap:14px; }
-.hdr-alarms { display:flex; gap:8px; }
+.hdr-alarms { display:flex; gap:8px; position:absolute; left:50%; transform:translateX(-50%); }
 .hdr-alarm-chip { display:flex; align-items:center; gap:4px; font-size:10px; padding:2px 8px;
                   border-radius:10px; font-weight:600; }
 .chip-critical{ background:#3d0000; color:#ff6b6b; border:1px solid #ff4444; }
@@ -1191,8 +1191,10 @@ async function ackEvent(id, btn) {
   try {
     const r = await fetch(`/api/events/${id}/acknowledge?by=operator`, {method:'POST'});
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    btn.closest('tr').querySelector('.c-ack').innerHTML = '<span class="badge b-ack">✓</span>';
-    decrementChip(btn.closest('tr')?.dataset.severity);
+    const tr = btn.closest('tr');
+    const sev = tr?.dataset.severity;
+    tr.querySelector('.c-ack').innerHTML = '<span class="badge b-ack">✓</span>';
+    decrementChip(sev);
     refreshGlobalStats();
   } catch(e) { btn.disabled = false; alert('ACK hatası: ' + e.message); }
 }
