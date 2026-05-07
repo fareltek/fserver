@@ -429,6 +429,7 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   <div class="tab"        id="tab-report"   onclick="switchTab('report')">📊 Raporlama</div>
   <div class="tab"        id="tab-archive"  onclick="switchTab('archive')">📁 Arşiv</div>
   <div class="tab"        id="tab-livelog"  onclick="switchTab('livelog')">📟 Canlı Log</div>
+  <div class="tab"        id="tab-users"    onclick="switchTab('users')" style="display:none">👥 Kullanıcılar</div>
 </div>
 
 <!-- ══════════════════════════════ MONITOR ══════════════════════════════════ -->
@@ -626,6 +627,17 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   </div>
 </div>
 
+<!-- ══════════════════════════ USERS ═══════════════════════════════════════ -->
+<div class="view" id="view-users">
+  <div class="sec-toolbar">
+    <span class="sec-toolbar-title" id="usr-summary">Yükleniyor...</span>
+    <button class="btn" onclick="loadUsers()">↻ Yenile</button>
+  </div>
+  <div class="sec-body" id="usr-body">
+    <div class="rpt-loading"><span class="spinner">⏳</span> Yükleniyor...</div>
+  </div>
+</div>
+
 <!-- ══════════════════════════ ARCHIVE ═════════════════════════════════════ -->
 <div class="view" id="view-archive">
   <div class="arc-toolbar">
@@ -743,8 +755,12 @@ async function doRegister() {
       showAuthMsg('reg-msg', err || 'Kayıt başarısız.', true);
       return;
     }
-    showAuthMsg('reg-msg', 'Kayıt başarılı! Giriş yapabilirsiniz.', false);
-    setTimeout(() => switchAuthTab('login'), 1500);
+    const d = await r.json();
+    const msg = d.role === 'MANAGER'
+      ? 'Kayıt başarılı! Giriş yapabilirsiniz.'
+      : 'Kayıt talebiniz alındı. Yönetici onayından sonra giriş yapabilirsiniz.';
+    showAuthMsg('reg-msg', msg, false);
+    if (d.role === 'MANAGER') setTimeout(() => switchAuthTab('login'), 1500);
   } catch(e) { showAuthMsg('reg-msg', e.message, true); }
   finally { btn.disabled = false; btn.textContent = 'Kayıt Ol'; }
 }
@@ -773,6 +789,10 @@ function applyRoleUI(role) {
   document.querySelectorAll('#sec-body .btn.primary, .sec-actions button').forEach(b => {
     b.style.display = canManage ? '' : 'none';
   });
+
+  // show/hide users tab
+  const usersTab = document.getElementById('tab-users');
+  if (usersTab) usersTab.style.display = canManage ? '' : 'none';
 
   // store for appendRow to use
   window._canAck = canAck;
@@ -842,6 +862,7 @@ function switchTab(name) {
   if (name==='report')   initReportTab();
   if (name==='archive')  loadArchive();
   if (name==='livelog')  startLiveLog();
+  if (name==='users')    loadUsers();
 }
 
 // ── SSE ───────────────────────────────────────────────────────────────────
@@ -1802,6 +1823,95 @@ function llApplyFilter() {
     const textOk = !llFltText  || tr.dataset.text.includes(llFltText);
     tr.style.display = (lvlOk && textOk) ? '' : 'none';
   });
+}
+
+// ── USER MANAGEMENT ───────────────────────────────────────────────────────
+async function loadUsers() {
+  const body = document.getElementById('usr-body');
+  body.innerHTML = '<div class="rpt-loading"><span class="spinner">⏳</span> Yükleniyor...</div>';
+  try {
+    const r = await authFetch('/api/users');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const users = await r.json();
+    const pending  = users.filter(u => !u.active).length;
+    const active   = users.filter(u =>  u.active).length;
+    document.getElementById('usr-summary').textContent =
+      `${users.length} kullanıcı · ${active} aktif · ${pending} onay bekliyor`;
+    renderUsers(users);
+  } catch(e) {
+    body.innerHTML = `<div class="sec-empty" style="color:var(--red)">Yüklenemedi: ${e.message}</div>`;
+  }
+}
+
+function renderUsers(users) {
+  const body = document.getElementById('usr-body');
+  if (!users.length) {
+    body.innerHTML = '<div class="sec-empty">Henüz kullanıcı yok.</div>';
+    return;
+  }
+  const roleBadge = r => {
+    const cls = r==='MANAGER'?'role-manager':r==='OPERATOR'?'role-operator':'role-guest';
+    return `<span class="user-role-badge ${cls}">${r}</span>`;
+  };
+  const rows = users.map(u => {
+    const activeBadge = u.active
+      ? '<span style="color:var(--green);font-size:10px">● Aktif</span>'
+      : '<span style="color:var(--yellow);font-size:10px">⏳ Onay Bekliyor</span>';
+    const lastLogin = u.lastLogin ? toLocalTime(u.lastLogin, true) : '—';
+    const actions = u.active
+      ? `<button class="btn sm" style="color:var(--red)" onclick="userSetActive('${u.id}',false)">Devre Dışı</button>`
+      : `<button class="btn sm success" onclick="userSetActive('${u.id}',true)">Onayla</button>`;
+    const roleSelect = `<select class="sel" style="font-size:10px;padding:2px 6px"
+        onchange="userSetRole('${u.id}',this.value)">
+      <option value="GUEST"    ${u.role==='GUEST'   ?'selected':''}>GUEST</option>
+      <option value="OPERATOR" ${u.role==='OPERATOR'?'selected':''}>OPERATOR</option>
+      <option value="MANAGER"  ${u.role==='MANAGER' ?'selected':''}>MANAGER</option>
+    </select>`;
+    return `<tr>
+      <td style="padding:8px 12px;font-size:12px;font-weight:600">${esc(u.fullName)}</td>
+      <td style="padding:8px 12px;font-size:11px;color:var(--blue)">${esc(u.email)}</td>
+      <td style="padding:8px 12px">${roleBadge(u.role)}</td>
+      <td style="padding:8px 12px">${activeBadge}</td>
+      <td style="padding:8px 12px;font-size:10px;color:var(--muted)">${lastLogin}</td>
+      <td style="padding:8px 12px">${roleSelect}</td>
+      <td style="padding:8px 12px">${actions}</td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML = `<div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="background:var(--surface);border-bottom:1px solid var(--border)">
+        <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Ad Soyad</th>
+        <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">E-Posta</th>
+        <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Rol</th>
+        <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Durum</th>
+        <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Son Giriş</th>
+        <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Rol Değiştir</th>
+        <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">İşlem</th>
+      </tr></thead>
+      <tbody style="background:var(--surface)">${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+async function userSetActive(id, active) {
+  try {
+    const r = await authFetch(`/api/users/${id}/${active?'activate':'deactivate'}`, {method:'POST'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await loadUsers();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+async function userSetRole(id, role) {
+  try {
+    const r = await authFetch(`/api/users/${id}/role`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({role})
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await loadUsers();
+  } catch(e) { alert('Hata: ' + e.message); }
 }
 
 // ── GLOBAL STATS REFRESH ──────────────────────────────────────────────────

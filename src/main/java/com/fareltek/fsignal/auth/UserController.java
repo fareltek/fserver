@@ -48,4 +48,14 @@ public class UserController {
                 .onErrorMap(IllegalArgumentException.class,
                         e -> new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage()));
     }
+
+    @PostMapping("/{id}/role")
+    public Mono<Map<String, Object>> changeRole(@PathVariable UUID id, @RequestBody RoleRequest req) {
+        return userService.setRole(id, req.role())
+                .map(u -> Map.<String, Object>of("id", u.getId().toString(), "role", u.getRole()))
+                .onErrorMap(IllegalArgumentException.class,
+                        e -> new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage()));
+    }
+
+    public record RoleRequest(String role) {}
 }

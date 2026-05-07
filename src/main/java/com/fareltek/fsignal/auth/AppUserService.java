@@ -32,8 +32,11 @@ public class AppUserService {
                 .flatMap(existing -> Mono.<AppUser>error(new IllegalArgumentException("Bu e-posta zaten kayıtlı.")))
                 .switchIfEmpty(
                     repo.count().flatMap(count -> {
-                        String effectiveRole = (count == 0) ? "MANAGER" : role;
+                        boolean isFirst    = (count == 0);
+                        String effectiveRole = isFirst ? "MANAGER" : role;
                         AppUser user = AppUser.create(fullName, email, encoder.encode(rawPassword), effectiveRole);
+                        // First user is immediately active; rest await admin approval
+                        user.setActive(isFirst);
                         return repo.save(user);
                     })
                 );
@@ -82,5 +85,13 @@ public class AppUserService {
         return repo.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Kullanıcı bulunamadı.")))
                 .flatMap(u -> { u.setActive(active); return repo.save(u); });
+    }
+
+    public Mono<AppUser> setRole(UUID id, String role) {
+        if (!VALID_ROLES.contains(role))
+            return Mono.error(new IllegalArgumentException("Geçersiz rol: " + role));
+        return repo.findById(id)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Kullanıcı bulunamadı.")))
+                .flatMap(u -> { u.setRole(role); return repo.save(u); });
     }
 }
