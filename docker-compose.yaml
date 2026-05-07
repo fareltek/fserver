@@ -11,6 +11,7 @@ services:
       - DB_USER=fsignal
       - DB_PASS=fsignal
       - ARCHIVE_PATH=/archive
+      - TZ=Europe/Istanbul
       - WAVESHARE_HOST=${WAVESHARE_HOST:-192.168.55.50}
       - WAVESHARE_PORT=${WAVESHARE_PORT:-4001}
     volumes:
