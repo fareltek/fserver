@@ -39,10 +39,11 @@ public class Fa51Parser {
 
         String msgType = switch (type) {
             case 0x01 -> "PERIODIC";
-            case 0x02 -> "HARDWARE";
+            case 0x02 -> "SPONTANEOUS";
             case 0x03 -> "HARDWARE";
             case 0x04 -> "HARDWARE";
             case 0x05 -> "HEARTBEAT";
+            case 0x06 -> "SYSTEM";
             default   -> "UNKNOWN";
         };
         String severity = switch (type) {

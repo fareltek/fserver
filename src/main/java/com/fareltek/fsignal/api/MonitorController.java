@@ -152,8 +152,9 @@ public class MonitorController {
         m.put("eventData",      e.getEventData());
         m.put("eventFlags",     e.getEventFlags());
         m.put("description",    e.getDescription());
-        m.put("acknowledged",   e.getAcknowledged());
-        m.put("acknowledgedBy", e.getAcknowledgedBy());
+        m.put("acknowledged",     e.getAcknowledged());
+        m.put("acknowledgedBy",   e.getAcknowledgedBy());
+        m.put("acknowledgedTime", e.getAcknowledgedTime() != null ? e.getAcknowledgedTime().toString() : null);
         return m;
     }
 }

@@ -378,8 +378,11 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
     <select class="sel" id="flt-type" onchange="applyFilter()">
       <option value="">Tümü</option>
       <option value="PERIODIC">PERIODIC</option>
+      <option value="SPONTANEOUS">SPONTANEOUS</option>
       <option value="HARDWARE">HARDWARE</option>
       <option value="HEARTBEAT">HEARTBEAT</option>
+      <option value="SYSTEM">SYSTEM</option>
+      <option value="UNKNOWN">UNKNOWN</option>
       <option value="RAW_DATA">RAW_DATA</option>
     </select>
     <span class="tlabel">Section:</span>
@@ -403,19 +406,16 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
     <table id="m-table" style="display:none">
       <thead>
         <tr>
-          <th style="width:38px">Seq</th>
-          <th style="width:38px">Kaynak</th>
-          <th style="width:84px">Zaman</th>
-          <th style="width:96px">Section</th>
-          <th style="width:120px">Adres</th>
-          <th style="width:66px">Ciddiyet</th>
-          <th style="width:66px">Mesaj Tipi</th>
+          <th style="width:90px">Zaman</th>
+          <th style="width:100px">Bölge Adı</th>
+          <th style="width:130px">Bölge IP</th>
+          <th style="width:68px">Ciddiyet</th>
+          <th style="width:72px">Mesaj Tipi</th>
           <th style="width:72px">Cihaz Tipi</th>
-          <th style="width:46px">CihazID</th>
-          <th style="width:44px">Kod</th>
+          <th style="width:48px">CihazID</th>
+          <th style="width:46px">Kod</th>
           <th>Açıklama</th>
-          <th style="width:52px">Bayraklar</th>
-          <th style="width:56px">Onay</th>
+          <th style="width:140px">Onay</th>
         </tr>
       </thead>
       <tbody id="m-tbody"></tbody>
@@ -683,12 +683,11 @@ function addLiveRow(ev) {
 
   const msgType    = ev.packetType || 'RAW';
   const severity   = ev.severity   || 'INFO';
-  const seq        = ev.sequence   != null ? ev.sequence : '—';
   const deviceType = ev.packetType ? 'FA51-CPU' : '—';
   const deviceId   = ev.srcId      != null ? ev.srcId   : '—';
   const code       = ev.eventCode  != null ? '0x' + ev.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
-  const flags      = ev.eventFlags != null && ev.eventFlags !== 0 ? '0x' + ev.eventFlags.toString(16).toUpperCase().padStart(4,'0') : '—';
   const desc       = ev.description || ev.ascii || (ev.hex ? ev.hex.substring(0,40) : '—');
+  const seqForGap  = ev.sequence;
 
   if (severity==='ALARM'||severity==='CRITICAL') {
     totalAlarm++;
@@ -699,8 +698,7 @@ function addLiveRow(ev) {
   updateStats();
 
   appendRow({
-    isLive:true,
-    seq, deviceType, deviceId, code, flags,
+    isLive:true, deviceType, deviceId, code, seqForGap,
     time: toLocalTime(ev.timestamp),
     section: ev.sectionName||'',
     addr: (ev.remoteAddr||'').replace('/',''),
@@ -708,6 +706,7 @@ function addLiveRow(ev) {
     hex: ev.hex||'',
     description: desc,
     acknowledged: false,
+    acknowledgedBy: null, acknowledgedTime: null,
     id: null
   });
 }
@@ -719,14 +718,12 @@ function addDbRow(e, addrMap) {
   const deviceType = e.deviceType  || '—';
   const deviceId   = e.deviceId    != null ? e.deviceId  : '—';
   const code       = e.eventCode   != null ? '0x' + e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
-  const flags      = e.eventFlags  != null && e.eventFlags !== 0 ? '0x' + e.eventFlags.toString(16).toUpperCase().padStart(4,'0') : '—';
   const desc        = e.description || '';
   const timeStr     = toLocalTime(e.eventTime, true);
   const sectionName = addrMap[e.sourceAddr] || e.sourceAddr || '';
 
   appendRow({
-    isLive:false,
-    seq: '—', deviceType, deviceId, code, flags,
+    isLive:false, deviceType, deviceId, code, seqForGap: null,
     time: timeStr,
     section: sectionName,
     addr: e.sourceAddr||'',
@@ -734,6 +731,8 @@ function addDbRow(e, addrMap) {
     hex: '',
     description: desc,
     acknowledged: e.acknowledged,
+    acknowledgedBy: e.acknowledgedBy||null,
+    acknowledgedTime: e.acknowledgedTime||null,
     id: e.id
   });
 }
@@ -744,14 +743,18 @@ function appendRow(r) {
   const sevCss  = SEV_CSS[r.severity]  || 'b-raw';
   const typeCss = SEV_CSS[r.msgType]   || 'b-raw';
   const rowCls  = (ROW_CSS[r.severity]||ROW_CSS[r.msgType]||'') + (r.isLive?' is-live':' row-db');
-  const srcBadge= r.isLive
-    ? '<span class="badge b-live">LIVE</span>'
-    : '<span class="badge b-db">DB</span>';
   const isAlarm = r.severity === 'ALARM' || r.severity === 'CRITICAL';
-  const ackCell = r.id && !r.acknowledged && isAlarm
-    ? `<button class="btn sm" onclick="ackEvent('${r.id}',this)">Onayla</button>`
-    : (r.acknowledged && isAlarm ? '<span class="badge b-ack">✓</span>' : '<span class="badge b-unack" style="opacity:.3">—</span>');
-  const descText = r.description || r.hex || '';
+  let ackCell;
+  if (r.id && !r.acknowledged && isAlarm) {
+    ackCell = `<button class="btn sm" onclick="ackEvent('${r.id}',this)">Onayla</button>`;
+  } else if (r.acknowledged) {
+    const by   = r.acknowledgedBy   ? esc(r.acknowledgedBy)                          : '';
+    const when = r.acknowledgedTime ? toLocalTime(r.acknowledgedTime, true)          : '';
+    ackCell = `<span class="badge b-ack" style="font-size:9px;white-space:normal">✓ ${by}<br><span style="color:var(--muted);font-size:8px">${when}</span></span>`;
+  } else {
+    ackCell = '<span style="color:var(--subtle);font-size:9px">—</span>';
+  }
+  const descText  = r.description || r.hex || '';
   const descShort = descText.length > 70 ? descText.substring(0,70)+'…' : descText;
 
   const tr = document.createElement('tr');
@@ -764,8 +767,6 @@ function appendRow(r) {
   if (r.id) tr.dataset.id = r.id;
 
   tr.innerHTML = `
-    <td class="c-num" style="color:var(--muted);font-size:9px">${esc(String(r.seq??'—'))}</td>
-    <td>${srcBadge}</td>
     <td class="c-time">${esc(r.time)}</td>
     <td class="c-name">${esc(r.section)}</td>
     <td class="c-addr">${esc(r.addr)}</td>
@@ -775,7 +776,6 @@ function appendRow(r) {
     <td class="c-num">${esc(String(r.deviceId??'—'))}</td>
     <td class="c-code">${esc(r.code??'—')}</td>
     <td class="c-hex" title="${esc(r.hex)}">${esc(descShort)}</td>
-    <td class="c-num" style="color:var(--purple);font-size:9px">${esc(r.flags??'—')}</td>
     <td class="c-ack">${ackCell}</td>`;
 
   // sequence gap detection (sadece canlı stream'den gelen paketler için)
@@ -1004,6 +1004,7 @@ function showFE(msg){const e=document.getElementById('form-error');e.textContent
 // ── REPORT ────────────────────────────────────────────────────────────────
 let reportData = [];
 let reportParams = {};
+let reportAddrMap = {};
 
 function initReportTab() {
   const today = new Date();
@@ -1015,6 +1016,7 @@ function initReportTab() {
   fetch('/api/sections').then(r=>r.json()).then(secs => {
     const el=document.getElementById('rpt-sect');
     secs.forEach(s => {
+      reportAddrMap[s.host+':'+s.port] = s.name;
       if (!el.querySelector(`option[value="${esc(s.host+':'+s.port)}"]`)) {
         const o=document.createElement('option');
         o.value=s.host+':'+s.port; o.textContent=s.name+' ('+s.host+':'+s.port+')';
@@ -1094,12 +1096,19 @@ function renderReportTable(data) {
 
   const rows = data.map((e,i) => {
     const sev  = e.severity||'INFO';
-    const dt       = toLocalTime(e.eventTime, true);
-    const desc     = (e.description||'').length>90 ? e.description.substring(0,90)+'…' : (e.description||'—');
-    const devType  = e.deviceType || '—';
-    const devId    = e.deviceId   != null ? e.deviceId   : '—';
-    const code     = e.eventCode  != null ? '0x'+e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
-    const flags    = e.eventFlags != null && e.eventFlags !== 0 ? '0x'+e.eventFlags.toString(16).toUpperCase().padStart(4,'0') : '—';
+    const dt      = toLocalTime(e.eventTime, true);
+    const desc    = (e.description||'').length>90 ? e.description.substring(0,90)+'…' : (e.description||'—');
+    const devType = e.deviceType || '—';
+    const devId   = e.deviceId   != null ? e.deviceId  : '—';
+    const code    = e.eventCode  != null ? '0x'+e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+    let ackTxt;
+    if (e.acknowledged) {
+      const by   = e.acknowledgedBy   || '';
+      const when = e.acknowledgedTime ? toLocalTime(e.acknowledgedTime, true) : '';
+      ackTxt = `<span class="badge b-ack" style="white-space:normal;font-size:9px">✓ ${esc(by)}<br><span style="font-size:8px;color:var(--muted)">${esc(when)}</span></span>`;
+    } else {
+      ackTxt = e.id ? `<button class="btn sm" onclick="ackEventReport('${e.id}',this)">Onayla</button>` : '<span class="badge b-unack">Bekliyor</span>';
+    }
     const ack  = e.acknowledged
       ? '<span class="badge b-ack">✓ Onaylı</span>'
       : (e.id ? `<button class="btn sm" onclick="ackEventReport('${e.id}',this)">Onayla</button>` : '<span class="badge b-unack">Bekliyor</span>');
@@ -1107,9 +1116,10 @@ function renderReportTable(data) {
     if(sev==='CRITICAL') rowStyle='background:var(--red-bg)';
     else if(sev==='ALARM') rowStyle='background:var(--red-bg);opacity:.85';
     else if(sev==='WARNING') rowStyle='background:var(--yellow-bg)';
+    const sectionName = reportAddrMap[e.sourceAddr] || e.sourceAddr || '—';
     return `<tr style="${rowStyle}">
-      <td class="c-num" style="color:var(--subtle)">${i+1}</td>
       <td class="c-time">${esc(dt)}</td>
+      <td class="c-name">${esc(sectionName)}</td>
       <td class="c-addr">${esc(e.sourceAddr||'—')}</td>
       <td><span class="badge ${sevCss(sev)}">${sev}</span></td>
       <td class="c-data">${esc(e.messageType||'—')}</td>
@@ -1117,25 +1127,23 @@ function renderReportTable(data) {
       <td class="c-num">${esc(String(devId))}</td>
       <td class="c-code">${esc(code)}</td>
       <td class="c-hex" style="font-size:10px" title="${esc(e.description||'')}">${esc(desc)}</td>
-      <td class="c-num" style="color:var(--purple);font-size:9px">${esc(flags)}</td>
-      <td style="text-align:center">${ack}</td>
+      <td style="text-align:center">${ackTxt}</td>
     </tr>`;
   }).join('');
 
   document.getElementById('rpt-result').innerHTML=`
     <table>
       <thead><tr>
-        <th style="width:32px">#</th>
-        <th style="width:140px">Zaman</th>
-        <th style="width:130px">Kaynak</th>
+        <th style="width:100px">Zaman</th>
+        <th style="width:100px">Bölge Adı</th>
+        <th style="width:130px">Bölge IP</th>
         <th style="width:72px">Ciddiyet</th>
         <th style="width:80px">Mesaj Tipi</th>
         <th style="width:72px">Cihaz Tipi</th>
         <th style="width:46px">CihazID</th>
         <th style="width:46px">Kod</th>
         <th>Açıklama</th>
-        <th style="width:54px">Bayraklar</th>
-        <th style="width:80px;text-align:center">Onay</th>
+        <th style="width:130px;text-align:center">Onay</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;

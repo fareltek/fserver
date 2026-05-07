@@ -224,13 +224,14 @@ public class PdfReportService {
         heading.setSpacingAfter(4);
         doc.add(heading);
 
-        // Columns: #, Zaman, Kaynak, Ciddiyet, Tip, CihazID, Kod, Hex (kısaltılmış), Onay
-        PdfPTable table = new PdfPTable(9);
+        // Zaman, BolgeAdi, BolgeIP, Ciddiyet, Mesaj Tipi, Cihaz Tipi, CihazID, Kod, Aciklama, Onay
+        PdfPTable table = new PdfPTable(10);
         table.setWidthPercentage(100);
-        table.setWidths(new float[]{0.6f, 2.5f, 2.2f, 1.3f, 1.3f, 1f, 0.8f, 3.5f, 0.8f});
+        table.setWidths(new float[]{2.2f, 1.8f, 2.0f, 1.2f, 1.2f, 1.3f, 0.7f, 0.8f, 3.2f, 2.0f});
         table.setHeaderRows(1);
 
-        String[] headers = {"#", "Zaman (UTC)", "Kaynak", "Ciddiyet", "Tip", "CihazID", "Kod", "Hex / Açıklama", "Onay"};
+        String[] headers = {"Zaman", "Bolge Adi", "Bolge IP", "Ciddiyet", "Mesaj Tipi",
+                            "Cihaz Tipi", "CihazID", "Kod", "Aciklama", "Onay"};
         for (String h : headers) {
             PdfPCell hCell = new PdfPCell(new Phrase(h, new Font(bfBold, 7, Font.BOLD, Color.WHITE)));
             hCell.setBackgroundColor(COL_DARK_BLUE);
@@ -244,29 +245,37 @@ public class PdfReportService {
             Color rowBg = (i % 2 == 0) ? Color.WHITE : new Color(248, 250, 252);
 
             String sev = e.getSeverity() != null ? e.getSeverity() : "INFO";
-            if ("CRITICAL".equals(sev))  rowBg = COL_RED_BG;
-            else if ("ALARM".equals(sev)) rowBg = new Color(255, 240, 240);
+            if ("CRITICAL".equals(sev))    rowBg = COL_RED_BG;
+            else if ("ALARM".equals(sev))   rowBg = new Color(255, 240, 240);
             else if ("WARNING".equals(sev)) rowBg = COL_YELLOW_BG;
 
-            String dt  = e.getEventTime() != null ? e.getEventTime().format(DT_FMT) : "—";
-            String hex = e.getDescription() != null
-                    ? (e.getDescription().length() > 40
-                        ? e.getDescription().substring(0, 40) + "…"
-                        : e.getDescription())
+            String dt      = e.getEventTime()   != null ? e.getEventTime().format(DT_FMT)   : "—";
+            String bolgIp  = e.getSourceAddr()   != null ? e.getSourceAddr()                 : "—";
+            String desc    = e.getDescription()  != null
+                    ? (e.getDescription().length() > 50 ? e.getDescription().substring(0, 50) + "…" : e.getDescription())
                     : "—";
-            String devId = e.getDeviceId() != null ? String.valueOf(e.getDeviceId()) : "—";
-            String code  = e.getEventCode() != null ? "0x" + Integer.toHexString(e.getEventCode()).toUpperCase() : "—";
-            String ack   = Boolean.TRUE.equals(e.getAcknowledged()) ? "Evet" : "Hayir";
+            String devType = e.getDeviceType()   != null ? e.getDeviceType()                 : "—";
+            String devId   = e.getDeviceId()     != null ? String.valueOf(e.getDeviceId())   : "—";
+            String code    = e.getEventCode()    != null ? "0x" + Integer.toHexString(e.getEventCode()).toUpperCase() : "—";
+            String ack;
+            if (Boolean.TRUE.equals(e.getAcknowledged())) {
+                String by   = e.getAcknowledgedBy()   != null ? e.getAcknowledgedBy()             : "—";
+                String when = e.getAcknowledgedTime() != null ? e.getAcknowledgedTime().format(DT_FMT) : "";
+                ack = "✓ " + by + (when.isEmpty() ? "" : "\n" + when);
+            } else {
+                ack = "Bekliyor";
+            }
 
-            addTableCell(table, String.valueOf(i + 1),              rowBg, bfNorm, 7, Element.ALIGN_RIGHT);
-            addTableCell(table, dt,                                  rowBg, bfNorm, 7, Element.ALIGN_LEFT);
-            addTableCell(table, e.getSourceAddr() != null ? e.getSourceAddr() : "—", rowBg, bfNorm, 7, Element.ALIGN_LEFT);
-            addTableCell(table, sev,                                 rowBg, bfBold, 7, Element.ALIGN_CENTER);
+            addTableCell(table, dt,      rowBg, bfNorm, 7, Element.ALIGN_LEFT);
+            addTableCell(table, "—",     rowBg, bfNorm, 7, Element.ALIGN_LEFT);   // BolgeAdi (not in DB)
+            addTableCell(table, bolgIp,  rowBg, bfNorm, 7, Element.ALIGN_LEFT);
+            addTableCell(table, sev,     rowBg, bfBold, 7, Element.ALIGN_CENTER);
             addTableCell(table, e.getMessageType() != null ? e.getMessageType() : "—", rowBg, bfNorm, 7, Element.ALIGN_CENTER);
-            addTableCell(table, devId,                               rowBg, bfNorm, 7, Element.ALIGN_RIGHT);
-            addTableCell(table, code,                                rowBg, bfNorm, 7, Element.ALIGN_CENTER);
-            addTableCell(table, hex,                                 rowBg, bfNorm, 6, Element.ALIGN_LEFT);
-            addTableCell(table, ack,                                 rowBg, bfNorm, 7, Element.ALIGN_CENTER);
+            addTableCell(table, devType, rowBg, bfNorm, 7, Element.ALIGN_CENTER);
+            addTableCell(table, devId,   rowBg, bfNorm, 7, Element.ALIGN_RIGHT);
+            addTableCell(table, code,    rowBg, bfNorm, 7, Element.ALIGN_CENTER);
+            addTableCell(table, desc,    rowBg, bfNorm, 6, Element.ALIGN_LEFT);
+            addTableCell(table, ack,     rowBg, bfNorm, 6, Element.ALIGN_CENTER);
         }
 
         doc.add(table);
