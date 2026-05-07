@@ -250,6 +250,99 @@ td { padding:4px 8px; vertical-align:middle; font-size:11px; }
 /* ── SEQUENCE GAP ROW ────────────────────────────────────────────────────── */
 tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 
+/* ── RESPONSIVE / MOBILE ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Header */
+  header {
+    padding: 6px 12px; height: auto; min-height: 48px;
+    flex-wrap: wrap; row-gap: 4px;
+  }
+  .hdr-alarms {
+    position: static; transform: none;
+    order: 10; width: 100%; justify-content: center;
+    padding-bottom: 4px;
+  }
+  .hdr-logo .sub { display: none; }
+  .sil-badge      { display: none; }
+  #status-label   { display: none; }
+  .hdr-right      { gap: 8px; }
+
+  /* Tabs — horizontal scroll, no visible scrollbar */
+  .tabs {
+    overflow-x: auto; padding: 0 6px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 10px 12px; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+
+  /* Stats bar */
+  .stats { padding: 6px 12px; gap: 14px; }
+  .stat-value { font-size: 13px; }
+
+  /* Generic toolbar */
+  .toolbar  { padding: 6px 10px; flex-wrap: wrap; }
+  .sec-toolbar { padding: 8px 12px; flex-wrap: wrap; }
+  .sec-toolbar-title { width: 100%; margin-right: 0; }
+
+  /* Sec cards */
+  .sec-body    { padding: 10px 12px; }
+  .sec-card    { flex-wrap: wrap; }
+  .sec-actions { width: 100%; justify-content: flex-end; margin-top: 6px; }
+
+  /* Tables — horizontal scroll */
+  .log-wrap   { overflow-x: auto; }
+  .rpt-result { overflow-x: auto; }
+  table { min-width: 560px; }
+
+  /* Buttons — larger touch targets */
+  .btn       { padding: 7px 14px; font-size: 12px; min-height: 34px; }
+  .btn.sm    { padding: 6px 10px; font-size: 11px; min-height: 30px; }
+  .theme-btn { width: 36px; height: 36px; font-size: 16px; }
+
+  /* Inputs */
+  .sel, .inp { padding: 7px 10px; font-size: 13px; }
+  .fi, .fs   { font-size: 14px; padding: 8px 10px; }
+
+  /* Section form — single column */
+  .form-grid { grid-template-columns: 1fr; }
+
+  /* Report filters */
+  .rpt-filters { padding: 10px 12px; }
+  .rpt-actions { margin-left: 0; width: 100%; }
+  .rpt-input, .rpt-sel { font-size: 13px; padding: 7px 9px; }
+
+  /* User table */
+  #usr-body table { min-width: 600px; }
+
+  /* Add user panel */
+  #add-user-panel > div { flex-direction: column; align-items: stretch; }
+  #add-user-panel input, #add-user-panel select { width: 100% !important; }
+
+  /* Auth box */
+  .auth-box { padding: 28px 20px; width: 100%; }
+}
+
+@media (max-width: 480px) {
+  header { padding: 6px 10px; }
+  .hdr-logo h1 { font-size: 13px; }
+
+  /* Alarm chips smaller */
+  .hdr-alarm-chip { font-size: 9px; padding: 2px 6px; }
+
+  /* Touch tap — remove 300ms delay */
+  .btn, .tab, .theme-btn { touch-action: manipulation; }
+
+  /* Event rows slightly taller for easier tapping */
+  td { padding: 6px 8px; }
+  thead th { padding: 6px 8px; }
+
+  /* Auth */
+  .auth-box   { padding: 22px 16px; border-radius: 10px; }
+  .auth-logo  { font-size: 18px; }
+  .auth-input { padding: 10px 12px; font-size: 14px; }
+  .auth-btn   { padding: 11px; font-size: 14px; }
+}
+
 /* ── PRINT ───────────────────────────────────────────────────────────────── */
 @media print {
   header { background:#fff!important; color:#000!important; border-bottom:2px solid #333; box-shadow:none; }
