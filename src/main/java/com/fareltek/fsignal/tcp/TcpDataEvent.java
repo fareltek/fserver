@@ -20,6 +20,7 @@ public record TcpDataEvent(
         Integer srcId,
         Integer eventCode,
         Integer eventData,
+        Integer eventFlags,
         String  description
 ) {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
@@ -36,9 +37,10 @@ public record TcpDataEvent(
                 pkt != null ? pkt.severity()         : null,
                 pkt != null ? pkt.sequence()         : null,
                 pkt != null ? pkt.sourceId()         : null,
-                pkt != null ? pkt.eventCode()        : null,
-                pkt != null ? pkt.eventData()        : null,
-                pkt != null ? Fa51Parser.describe(pkt) : null
+                pkt != null ? pkt.eventCode()           : null,
+                pkt != null ? pkt.eventData()           : null,
+                pkt != null ? pkt.eventFlags()          : null,
+                pkt != null ? Fa51Parser.describe(pkt)  : null
         );
     }
 
@@ -46,13 +48,13 @@ public record TcpDataEvent(
                                                String remoteAddr, String type) {
         return new TcpDataEvent(type, LocalDateTime.now().format(FMT),
                 sectionId, sectionName, remoteAddr, 0, "", "",
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 
     public static TcpDataEvent heartbeat() {
         return new TcpDataEvent("HEARTBEAT", LocalDateTime.now().format(FMT),
                 null, null, null, 0, "", "",
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 
     private static String toAscii(byte[] data) {

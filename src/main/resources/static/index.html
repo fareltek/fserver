@@ -403,15 +403,18 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
     <table id="m-table" style="display:none">
       <thead>
         <tr>
-          <th style="width:42px">Kaynak</th>
-          <th style="width:88px">Zaman</th>
-          <th style="width:100px">Section</th>
-          <th style="width:130px">Adres</th>
-          <th style="width:70px">Ciddiyet</th>
-          <th style="width:70px">Mesaj Tipi</th>
-          <th style="width:52px">CihazID</th>
-          <th style="width:48px">Kod</th>
+          <th style="width:38px">Seq</th>
+          <th style="width:38px">Kaynak</th>
+          <th style="width:84px">Zaman</th>
+          <th style="width:96px">Section</th>
+          <th style="width:120px">Adres</th>
+          <th style="width:66px">Ciddiyet</th>
+          <th style="width:66px">Mesaj Tipi</th>
+          <th style="width:72px">Cihaz Tipi</th>
+          <th style="width:46px">CihazID</th>
+          <th style="width:44px">Kod</th>
           <th>Açıklama</th>
+          <th style="width:52px">Bayraklar</th>
           <th style="width:56px">Onay</th>
         </tr>
       </thead>
@@ -678,12 +681,14 @@ function addLiveRow(ev) {
   totalPkt++; totalBytes += ev.byteCount;
   activeSect.add(ev.sectionName || ev.sectionId);
 
-  const msgType  = ev.packetType || 'RAW';
-  const severity = ev.severity   || 'INFO';
-  const deviceId = ev.srcId      != null ? ev.srcId    : '—';
-  const code     = ev.eventCode  != null ? '0x' + ev.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
-  const desc     = ev.description || ev.ascii || (ev.hex ? ev.hex.substring(0,40) : '—');
-  const seqForGap = ev.sequence;
+  const msgType    = ev.packetType || 'RAW';
+  const severity   = ev.severity   || 'INFO';
+  const seq        = ev.sequence   != null ? ev.sequence : '—';
+  const deviceType = ev.packetType ? 'FA51-CPU' : '—';
+  const deviceId   = ev.srcId      != null ? ev.srcId   : '—';
+  const code       = ev.eventCode  != null ? '0x' + ev.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+  const flags      = ev.eventFlags != null && ev.eventFlags !== 0 ? '0x' + ev.eventFlags.toString(16).toUpperCase().padStart(4,'0') : '—';
+  const desc       = ev.description || ev.ascii || (ev.hex ? ev.hex.substring(0,40) : '—');
 
   if (severity==='ALARM'||severity==='CRITICAL') {
     totalAlarm++;
@@ -695,11 +700,11 @@ function addLiveRow(ev) {
 
   appendRow({
     isLive:true,
+    seq, deviceType, deviceId, code, flags,
     time: toLocalTime(ev.timestamp),
     section: ev.sectionName||'',
     addr: (ev.remoteAddr||'').replace('/',''),
-    severity, msgType, deviceId, code,
-    seqForGap,
+    severity, msgType,
     hex: ev.hex||'',
     description: desc,
     acknowledged: false,
@@ -709,21 +714,23 @@ function addLiveRow(ev) {
 
 // ── DB ROW ────────────────────────────────────────────────────────────────
 function addDbRow(e, addrMap) {
-  const msgType  = e.messageType || 'RAW_DATA';
-  const severity = e.severity    || 'INFO';
-  const deviceId = e.deviceId    != null ? e.deviceId   : '—';
-  const code     = e.eventCode   != null ? '0x' + e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+  const msgType    = e.messageType || 'RAW_DATA';
+  const severity   = e.severity    || 'INFO';
+  const deviceType = e.deviceType  || '—';
+  const deviceId   = e.deviceId    != null ? e.deviceId  : '—';
+  const code       = e.eventCode   != null ? '0x' + e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+  const flags      = e.eventFlags  != null && e.eventFlags !== 0 ? '0x' + e.eventFlags.toString(16).toUpperCase().padStart(4,'0') : '—';
   const desc        = e.description || '';
   const timeStr     = toLocalTime(e.eventTime, true);
   const sectionName = addrMap[e.sourceAddr] || e.sourceAddr || '';
 
   appendRow({
     isLive:false,
+    seq: '—', deviceType, deviceId, code, flags,
     time: timeStr,
     section: sectionName,
     addr: e.sourceAddr||'',
-    severity, msgType, deviceId, code,
-    seqForGap: null,
+    severity, msgType,
     hex: '',
     description: desc,
     acknowledged: e.acknowledged,
@@ -757,15 +764,18 @@ function appendRow(r) {
   if (r.id) tr.dataset.id = r.id;
 
   tr.innerHTML = `
+    <td class="c-num" style="color:var(--muted);font-size:9px">${esc(String(r.seq??'—'))}</td>
     <td>${srcBadge}</td>
     <td class="c-time">${esc(r.time)}</td>
     <td class="c-name">${esc(r.section)}</td>
     <td class="c-addr">${esc(r.addr)}</td>
     <td><span class="badge ${sevCss}">${esc(r.severity)}</span></td>
     <td><span class="badge ${typeCss}">${esc(r.msgType)}</span></td>
+    <td class="c-data" style="font-size:9px">${esc(r.deviceType??'—')}</td>
     <td class="c-num">${esc(String(r.deviceId??'—'))}</td>
-    <td class="c-code">${esc(r.code)}</td>
+    <td class="c-code">${esc(r.code??'—')}</td>
     <td class="c-hex" title="${esc(r.hex)}">${esc(descShort)}</td>
+    <td class="c-num" style="color:var(--purple);font-size:9px">${esc(r.flags??'—')}</td>
     <td class="c-ack">${ackCell}</td>`;
 
   // sequence gap detection (sadece canlı stream'den gelen paketler için)
@@ -1084,10 +1094,12 @@ function renderReportTable(data) {
 
   const rows = data.map((e,i) => {
     const sev  = e.severity||'INFO';
-    const dt     = toLocalTime(e.eventTime, true);
-    const desc   = (e.description||'').length>90 ? e.description.substring(0,90)+'…' : (e.description||'—');
-    const devId  = e.deviceId  != null ? e.deviceId  : '—';
-    const code   = e.eventCode != null ? '0x'+e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+    const dt       = toLocalTime(e.eventTime, true);
+    const desc     = (e.description||'').length>90 ? e.description.substring(0,90)+'…' : (e.description||'—');
+    const devType  = e.deviceType || '—';
+    const devId    = e.deviceId   != null ? e.deviceId   : '—';
+    const code     = e.eventCode  != null ? '0x'+e.eventCode.toString(16).toUpperCase().padStart(2,'0') : '—';
+    const flags    = e.eventFlags != null && e.eventFlags !== 0 ? '0x'+e.eventFlags.toString(16).toUpperCase().padStart(4,'0') : '—';
     const ack  = e.acknowledged
       ? '<span class="badge b-ack">✓ Onaylı</span>'
       : (e.id ? `<button class="btn sm" onclick="ackEventReport('${e.id}',this)">Onayla</button>` : '<span class="badge b-unack">Bekliyor</span>');
@@ -1101,9 +1113,11 @@ function renderReportTable(data) {
       <td class="c-addr">${esc(e.sourceAddr||'—')}</td>
       <td><span class="badge ${sevCss(sev)}">${sev}</span></td>
       <td class="c-data">${esc(e.messageType||'—')}</td>
+      <td class="c-data" style="font-size:9px">${esc(devType)}</td>
       <td class="c-num">${esc(String(devId))}</td>
       <td class="c-code">${esc(code)}</td>
       <td class="c-hex" style="font-size:10px" title="${esc(e.description||'')}">${esc(desc)}</td>
+      <td class="c-num" style="color:var(--purple);font-size:9px">${esc(flags)}</td>
       <td style="text-align:center">${ack}</td>
     </tr>`;
   }).join('');
@@ -1111,15 +1125,17 @@ function renderReportTable(data) {
   document.getElementById('rpt-result').innerHTML=`
     <table>
       <thead><tr>
-        <th style="width:36px">#</th>
-        <th style="width:155px">Zaman</th>
-        <th style="width:145px">Kaynak</th>
-        <th style="width:80px">Ciddiyet</th>
-        <th style="width:90px">Mesaj Tipi</th>
-        <th style="width:52px">CihazID</th>
-        <th style="width:52px">Kod</th>
+        <th style="width:32px">#</th>
+        <th style="width:140px">Zaman</th>
+        <th style="width:130px">Kaynak</th>
+        <th style="width:72px">Ciddiyet</th>
+        <th style="width:80px">Mesaj Tipi</th>
+        <th style="width:72px">Cihaz Tipi</th>
+        <th style="width:46px">CihazID</th>
+        <th style="width:46px">Kod</th>
         <th>Açıklama</th>
-        <th style="width:90px;text-align:center">Onay</th>
+        <th style="width:54px">Bayraklar</th>
+        <th style="width:80px;text-align:center">Onay</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;

@@ -93,35 +93,38 @@ public class ArchiveController {
     public Flux<ServerSentEvent<String>> liveLog() {
         Path logFile = Paths.get(archivePath).toAbsolutePath().normalize()
                 .resolve("logs/fsignal.log");
-        AtomicLong offset = new AtomicLong(
-                Files.exists(logFile) ? logFile.toFile().length() : 0L);
+        AtomicLong offset = new AtomicLong(0L);
 
-        return Flux.interval(Duration.ofSeconds(1))
-                .subscribeOn(Schedulers.boundedElastic())
-                .publishOn(Schedulers.boundedElastic())
-                .flatMapIterable(tick -> {
-                    List<String> lines = new ArrayList<>();
-                    if (!Files.exists(logFile)) return lines;
+        Flux<ServerSentEvent<String>> heartbeat = Flux.interval(Duration.ofSeconds(15))
+                .map(i -> ServerSentEvent.<String>builder().comment("hb").build());
+
+        Flux<ServerSentEvent<String>> lines = Flux.interval(Duration.ofSeconds(1))
+                .flatMap(tick -> Mono.fromCallable(() -> {
+                    List<String> result = new ArrayList<>();
+                    if (!Files.exists(logFile)) return result;
+                    long len = logFile.toFile().length();
+                    long pos = offset.get();
+                    if (len < pos) { offset.set(0); pos = 0; }
+                    if (len <= pos) return result;
                     try (RandomAccessFile raf = new RandomAccessFile(logFile.toFile(), "r")) {
-                        long len = raf.length();
-                        long pos = offset.get();
-                        if (len < pos) { offset.set(0); pos = 0; } // rotated
-                        if (len <= pos) return lines;
                         raf.seek(pos);
-                        byte[] buf = new byte[(int)(len - pos)];
-                        raf.readFully(buf);
-                        offset.set(len);
-                        String chunk = new String(buf, java.nio.charset.StandardCharsets.UTF_8);
-                        for (String line : chunk.split("\n")) {
-                            String trimmed = line.stripTrailing();
-                            if (!trimmed.isEmpty()) lines.add(trimmed);
+                        byte[] buf = new byte[(int) Math.min(len - pos, 65536)];
+                        int read = raf.read(buf);
+                        if (read > 0) {
+                            offset.set(pos + read);
+                            String chunk = new String(buf, 0, read, java.nio.charset.StandardCharsets.UTF_8);
+                            for (String line : chunk.split("\n")) {
+                                String trimmed = line.stripTrailing();
+                                if (!trimmed.isEmpty()) result.add(trimmed);
+                            }
                         }
-                    } catch (IOException e) {
-                        log.warn("[LiveLog] Okuma hatasi: {}", e.getMessage());
                     }
-                    return lines;
-                })
+                    return result;
+                }).subscribeOn(Schedulers.boundedElastic()).onErrorReturn(new ArrayList<>()))
+                .flatMapIterable(l -> l)
                 .map(line -> ServerSentEvent.<String>builder().data(line).build());
+
+        return Flux.merge(lines, heartbeat);
     }
 
     /** On-demand CSV export for any date (default: today) */
