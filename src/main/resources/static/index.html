@@ -491,11 +491,11 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 
 <div class="tabs">
   <div class="tab active" id="tab-monitor"  onclick="switchTab('monitor')">📡 Canlı İzleme</div>
-  <div class="tab"        id="tab-sections" onclick="switchTab('sections')">⚙️ Section Yönetimi</div>
+  <div class="tab"        id="tab-sections" onclick="switchTab('sections')" style="display:none">⚙️ Section Yönetimi</div>
   <div class="tab"        id="tab-report"   onclick="switchTab('report')">📊 Raporlama</div>
   <div class="tab"        id="tab-archive"  onclick="switchTab('archive')">📁 Arşiv</div>
-  <div class="tab"        id="tab-livelog"  onclick="switchTab('livelog')">📟 Canlı Log</div>
-  <div class="tab"        id="tab-users"    onclick="switchTab('users')" style="display:none">👥 Kullanıcılar</div>
+  <div class="tab"        id="tab-livelog"  onclick="switchTab('livelog')" style="display:none">📟 Canlı Log</div>
+  <div class="tab"        id="tab-users"    onclick="switchTab('users')"   style="display:none">👥 Kullanıcılar</div>
 </div>
 
 <!-- ══════════════════════════════ MONITOR ══════════════════════════════════ -->
@@ -735,11 +735,11 @@ function toggleTheme() {
 })();
 
 // ── AUTH ──────────────────────────────────────────────────────────────────
-let authToken   = localStorage.getItem('fsignal-token');
+let authToken   = sessionStorage.getItem('fsignal-token');
 let currentUser = null; // {id, fullName, email, role}
 
-function setToken(t) { authToken = t; localStorage.setItem('fsignal-token', t); }
-function clearToken()  { authToken = null; currentUser = null; localStorage.removeItem('fsignal-token'); }
+function setToken(t) { authToken = t; sessionStorage.setItem('fsignal-token', t); }
+function clearToken()  { authToken = null; currentUser = null; sessionStorage.removeItem('fsignal-token'); }
 
 async function authFetch(url, options = {}) {
   const headers = { ...(options.headers || {}) };
@@ -872,21 +872,23 @@ function doLogout() {
 }
 
 function applyRoleUI(role) {
-  const canAckAll  = role === 'MANAGER';
-  const canAck     = role === 'OPERATOR' || role === 'MANAGER';
-  const canManage  = role === 'MANAGER';
+  const canAckAll = role === 'MANAGER';
+  const canAck    = role === 'OPERATOR' || role === 'MANAGER';
+  const canManage = role === 'MANAGER';
 
+  // Tabs: Sections, Live Log, Users → MANAGER only
+  document.getElementById('tab-sections').style.display = canManage ? '' : 'none';
+  document.getElementById('tab-livelog').style.display  = canManage ? '' : 'none';
+  document.getElementById('tab-users').style.display    = canManage ? '' : 'none';
+
+  // Acknowledge-all button → MANAGER only
   const ackAllBtn = document.getElementById('btn-ack-all');
   if (ackAllBtn) ackAllBtn.style.display = canAckAll ? '' : 'none';
 
-  // Section management toolbar buttons (+ Yeni Section, edit/delete in cards)
+  // Section management buttons (add/edit/delete) → MANAGER only
   document.querySelectorAll('#sec-body .btn.primary, .sec-actions button').forEach(b => {
     b.style.display = canManage ? '' : 'none';
   });
-
-  // show/hide users tab
-  const usersTab = document.getElementById('tab-users');
-  if (usersTab) usersTab.style.display = canManage ? '' : 'none';
 
   // store for appendRow to use
   window._canAck = canAck;
