@@ -271,33 +271,51 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 
 /* ── AUTH OVERLAY ────────────────────────────────────────────────────────── */
 #auth-overlay { position:fixed; inset:0; z-index:1000; background:var(--bg);
-                display:flex; align-items:center; justify-content:center; }
+                display:flex; align-items:center; justify-content:center;
+                padding:16px; }
 #auth-overlay.hidden { display:none; }
-.auth-box { background:var(--surface); border:1px solid var(--border); border-radius:12px;
-            padding:32px 36px; width:400px; max-width:calc(100vw - 40px); }
-.auth-logo { font-size:18px; font-weight:700; color:var(--blue); letter-spacing:1.5px; margin-bottom:4px; }
-.auth-sub { font-size:10px; color:var(--muted); margin-bottom:20px; letter-spacing:.5px; }
-.auth-tabs { display:flex; gap:0; margin-bottom:20px; border-bottom:1px solid var(--border); }
-.auth-tab { padding:8px 18px; font-size:12px; color:var(--muted); cursor:pointer;
-            border-bottom:2px solid transparent; transition:color .15s,border-color .15s; }
+.auth-box { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:36px 40px; width:460px; max-width:100%;
+            box-shadow:0 8px 32px rgba(0,0,0,.4); }
+.auth-brand { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.auth-logo { font-size:20px; font-weight:800; color:var(--blue); letter-spacing:2px; }
+.auth-sil  { font-size:9px; font-weight:700; padding:2px 7px; border-radius:4px;
+             background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue); letter-spacing:.5px; }
+.auth-sub  { font-size:10px; color:var(--muted); margin-bottom:24px; letter-spacing:.4px; }
+.auth-tabs { display:flex; margin-bottom:24px; border-bottom:1px solid var(--border); }
+.auth-tab  { padding:9px 20px; font-size:12px; font-weight:500; color:var(--muted); cursor:pointer;
+             border-bottom:2px solid transparent; transition:color .15s,border-color .15s; }
+.auth-tab:hover { color:var(--text); }
 .auth-tab.active { color:var(--blue); border-bottom-color:var(--blue); }
-.auth-form { display:none; }
-.auth-form.active { display:block; }
-.auth-fg { display:flex; flex-direction:column; gap:4px; margin-bottom:14px; }
-.auth-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
-.auth-input,.auth-select { background:var(--bg); border:1px solid var(--border); color:var(--text);
-                           padding:8px 12px; border-radius:6px; font-family:inherit;
-                           font-size:12px; outline:none; width:100%; }
-.auth-input:focus,.auth-select:focus { border-color:var(--blue); }
+.auth-form { display:none; flex-direction:column; gap:14px; }
+.auth-form.active { display:flex; }
+.auth-row  { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.auth-fg   { display:flex; flex-direction:column; gap:5px; }
+.auth-label { font-size:9px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+.auth-input-wrap { position:relative; }
+.auth-input,.auth-select {
+  background:var(--bg); border:1px solid var(--border); color:var(--text);
+  padding:9px 12px; border-radius:7px; font-family:inherit; font-size:12px;
+  outline:none; width:100%; transition:border-color .15s,box-shadow .15s; }
+.auth-input:focus,.auth-select:focus {
+  border-color:var(--blue); box-shadow:0 0 0 3px rgba(88,166,255,.15); }
+.auth-input.has-toggle { padding-right:38px; }
+.auth-eye  { position:absolute; right:10px; top:50%; transform:translateY(-50%);
+             background:none; border:none; cursor:pointer; color:var(--muted);
+             font-size:15px; line-height:1; padding:2px; transition:color .15s; }
+.auth-eye:hover { color:var(--text); }
 .auth-select option { background:var(--surface); }
-.auth-btn { width:100%; padding:10px; background:#1f6feb; border:none; color:#fff;
-            border-radius:6px; font-family:inherit; font-size:13px; font-weight:600;
-            cursor:pointer; margin-top:4px; transition:background .15s; }
-.auth-btn:hover { background:#388bfd; }
-.auth-btn:disabled { opacity:.5; cursor:not-allowed; }
-.auth-msg { font-size:11px; margin-top:10px; display:none; }
-.auth-msg.error   { color:var(--red); }
-.auth-msg.success { color:var(--green); }
+.auth-hint { font-size:9px; color:var(--subtle); margin-top:2px; }
+.auth-divider { height:1px; background:var(--border); margin:4px 0; }
+.auth-btn { width:100%; padding:11px; background:#1f6feb; border:none; color:#fff;
+            border-radius:7px; font-family:inherit; font-size:13px; font-weight:600;
+            cursor:pointer; transition:background .15s,transform .1s; letter-spacing:.3px; }
+.auth-btn:hover  { background:#388bfd; }
+.auth-btn:active { transform:scale(.98); }
+.auth-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+.auth-msg { font-size:11px; padding:9px 12px; border-radius:6px; display:none; line-height:1.5; }
+.auth-msg.error   { background:var(--red-bg);    color:var(--red);   border:1px solid var(--red); }
+.auth-msg.success { background:var(--green-bg); color:var(--green); border:1px solid var(--green); }
 
 /* user chip in header */
 .user-chip { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
@@ -360,38 +378,86 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 <!-- ══════════════════════════ AUTH OVERLAY ═════════════════════════════════ -->
 <div id="auth-overlay">
   <div class="auth-box">
-    <div class="auth-logo">FSIGNAL</div>
-    <div class="auth-sub">TRAMWAY SIGNALIZATION · EN50129 · SIL2</div>
+    <div class="auth-brand">
+      <span class="auth-logo">FSIGNAL</span>
+      <span class="auth-sil">SIL2</span>
+    </div>
+    <div class="auth-sub">TRAMWAY SIGNALIZATION SYSTEM · EN50129</div>
+
     <div class="auth-tabs">
       <div class="auth-tab active" id="atab-login"    onclick="switchAuthTab('login')">Giriş Yap</div>
       <div class="auth-tab"        id="atab-register" onclick="switchAuthTab('register')">Kayıt Ol</div>
     </div>
 
-    <!-- LOGIN -->
+    <!-- ── LOGIN ── -->
     <div class="auth-form active" id="aform-login">
-      <div class="auth-fg"><label class="auth-label">E-Posta</label>
-        <input class="auth-input" id="login-email" type="email" placeholder="ornek@firma.com" autocomplete="username"></div>
-      <div class="auth-fg"><label class="auth-label">Şifre</label>
-        <input class="auth-input" id="login-pass"  type="password" placeholder="••••••••" autocomplete="current-password"
-               onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="auth-fg">
+        <label class="auth-label">E-Posta</label>
+        <input class="auth-input" id="login-email" type="email"
+               placeholder="ornek@firma.com" autocomplete="username">
+      </div>
+      <div class="auth-fg">
+        <label class="auth-label">Şifre</label>
+        <div class="auth-input-wrap">
+          <input class="auth-input has-toggle" id="login-pass" type="password"
+                 placeholder="••••••••" autocomplete="current-password"
+                 onkeydown="if(event.key==='Enter')doLogin()">
+          <button type="button" class="auth-eye" tabindex="-1"
+                  onclick="togglePassVis('login-pass',this)" title="Şifreyi göster">◉</button>
+        </div>
+      </div>
       <button class="auth-btn" id="login-btn" onclick="doLogin()">Giriş Yap</button>
       <div class="auth-msg" id="login-msg"></div>
     </div>
 
-    <!-- REGISTER -->
+    <!-- ── REGISTER ── -->
     <div class="auth-form" id="aform-register">
-      <div class="auth-fg"><label class="auth-label">Ad Soyad</label>
-        <input class="auth-input" id="reg-name"  type="text" placeholder="Adı Soyadı"></div>
-      <div class="auth-fg"><label class="auth-label">E-Posta</label>
-        <input class="auth-input" id="reg-email" type="email" placeholder="ornek@firma.com" autocomplete="username"></div>
-      <div class="auth-fg"><label class="auth-label">Şifre (min 8 karakter)</label>
-        <input class="auth-input" id="reg-pass"  type="password" placeholder="••••••••" autocomplete="new-password"></div>
-      <div class="auth-fg"><label class="auth-label">Yetki</label>
+      <div class="auth-row">
+        <div class="auth-fg">
+          <label class="auth-label">Ad</label>
+          <input class="auth-input" id="reg-firstname" type="text"
+                 placeholder="Adınız" autocomplete="given-name">
+        </div>
+        <div class="auth-fg">
+          <label class="auth-label">Soyad</label>
+          <input class="auth-input" id="reg-lastname" type="text"
+                 placeholder="Soyadınız" autocomplete="family-name">
+        </div>
+      </div>
+      <div class="auth-fg">
+        <label class="auth-label">E-Posta</label>
+        <input class="auth-input" id="reg-email" type="email"
+               placeholder="ornek@firma.com" autocomplete="username">
+      </div>
+      <div class="auth-fg">
+        <label class="auth-label">Şifre</label>
+        <div class="auth-input-wrap">
+          <input class="auth-input has-toggle" id="reg-pass" type="password"
+                 placeholder="En az 8 karakter" autocomplete="new-password"
+                 oninput="checkPassStrength(this.value)">
+          <button type="button" class="auth-eye" tabindex="-1"
+                  onclick="togglePassVis('reg-pass',this)" title="Şifreyi göster">◉</button>
+        </div>
+        <div class="auth-hint" id="reg-strength"></div>
+      </div>
+      <div class="auth-fg">
+        <label class="auth-label">Şifre Tekrar</label>
+        <div class="auth-input-wrap">
+          <input class="auth-input has-toggle" id="reg-pass2" type="password"
+                 placeholder="Şifrenizi tekrar girin" autocomplete="new-password">
+          <button type="button" class="auth-eye" tabindex="-1"
+                  onclick="togglePassVis('reg-pass2',this)" title="Şifreyi göster">◉</button>
+        </div>
+      </div>
+      <div class="auth-fg">
+        <label class="auth-label">Talep Edilen Yetki</label>
         <select class="auth-select" id="reg-role">
           <option value="GUEST">GUEST — Sadece görüntüleme</option>
           <option value="OPERATOR">OPERATOR — Alarm onaylama</option>
           <option value="MANAGER">MANAGER — Tam yönetim</option>
-        </select></div>
+        </select>
+        <div class="auth-hint">Yönetici onayı sonrası hesabınız aktif edilecektir.</div>
+      </div>
       <button class="auth-btn" id="reg-btn" onclick="doRegister()">Kayıt Ol</button>
       <div class="auth-msg" id="reg-msg"></div>
     </div>
@@ -703,6 +769,29 @@ function switchAuthTab(tab) {
   document.getElementById('reg-msg').style.display   = 'none';
 }
 
+function togglePassVis(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '◎' : '◉';
+  btn.title = show ? 'Şifreyi gizle' : 'Şifreyi göster';
+}
+
+function checkPassStrength(val) {
+  const el = document.getElementById('reg-strength');
+  if (!val) { el.textContent = ''; return; }
+  let score = 0;
+  if (val.length >= 8)  score++;
+  if (val.length >= 12) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = ['','Çok zayıf','Zayıf','Orta','Güçlü','Çok güçlü'];
+  const colors = ['','#f85149','#fb8500','#d29922','#3fb950','#3fb950'];
+  el.textContent = levels[score] || '';
+  el.style.color = colors[score] || '';
+}
+
 function showAuthMsg(id, msg, isError) {
   const el = document.getElementById(id);
   el.textContent = msg;
@@ -735,13 +824,18 @@ async function doLogin() {
 }
 
 async function doRegister() {
-  const name  = document.getElementById('reg-name').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const pass  = document.getElementById('reg-pass').value;
-  const role  = document.getElementById('reg-role').value;
-  if (!name)           { showAuthMsg('reg-msg', 'Ad soyad zorunludur.', true); return; }
+  const firstName = document.getElementById('reg-firstname').value.trim();
+  const lastName  = document.getElementById('reg-lastname').value.trim();
+  const email     = document.getElementById('reg-email').value.trim();
+  const pass      = document.getElementById('reg-pass').value;
+  const pass2     = document.getElementById('reg-pass2').value;
+  const role      = document.getElementById('reg-role').value;
+  const name      = (firstName + ' ' + lastName).trim();
+  if (!firstName)      { showAuthMsg('reg-msg', 'Ad alanı zorunludur.', true); return; }
+  if (!lastName)       { showAuthMsg('reg-msg', 'Soyad alanı zorunludur.', true); return; }
   if (!email)          { showAuthMsg('reg-msg', 'E-posta zorunludur.', true); return; }
   if (pass.length < 8) { showAuthMsg('reg-msg', 'Şifre en az 8 karakter olmalı.', true); return; }
+  if (pass !== pass2)  { showAuthMsg('reg-msg', 'Şifreler eşleşmiyor.', true); return; }
   const btn = document.getElementById('reg-btn');
   btn.disabled = true; btn.textContent = '⏳ Kayıt oluşturuluyor...';
   try {
