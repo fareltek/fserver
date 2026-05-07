@@ -10,8 +10,11 @@ services:
       - DB_NAME=fsignal
       - DB_USER=fsignal
       - DB_PASS=fsignal
+      - ARCHIVE_PATH=/archive
       - WAVESHARE_HOST=${WAVESHARE_HOST:-192.168.55.50}
       - WAVESHARE_PORT=${WAVESHARE_PORT:-4001}
+    volumes:
+      - fsignal-archive:/archive
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,3 +47,4 @@ services:
 
 volumes:
   pgdata:
+  fsignal-archive:
