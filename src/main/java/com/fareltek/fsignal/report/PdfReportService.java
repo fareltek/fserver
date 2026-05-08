@@ -230,10 +230,10 @@ public class PdfReportService {
         heading.setSpacingAfter(4);
         doc.add(heading);
 
-        // Zaman, BolgeAdi, BolgeIP, Ciddiyet, Mesaj Tipi, Cihaz Tipi, CihazID, Kod, Aciklama, Onay
+        // Zaman, BolgeAdi, BolgeIP, Ciddiyet, Mesaj Tipi, Kaynak Tipi, Kaynak ID, Data, Aciklama, Onay
         PdfPTable table = new PdfPTable(10);
         table.setWidthPercentage(100);
-        table.setWidths(new float[]{2.4f, 1.6f, 2.0f, 1.1f, 1.4f, 1.2f, 0.7f, 0.9f, 3.8f, 1.9f});
+        table.setWidths(new float[]{2.1f, 1.4f, 1.8f, 0.9f, 1.2f, 1.1f, 0.6f, 0.7f, 5.0f, 1.7f});
         table.setHeaderRows(1);
 
         String[] headers = {"Zaman", "Bolge Adi", "Bolge IP", "Ciddiyet", "Mesaj Tipi",
@@ -265,13 +265,14 @@ public class PdfReportService {
             String devType = e.getDeviceType()   != null ? e.getDeviceType()                 : "—";
             String devId   = e.getDeviceId()     != null ? String.valueOf(e.getDeviceId())   : "—";
             String code    = e.getEventCode()    != null ? "0x" + Integer.toHexString(e.getEventCode()).toUpperCase() : "—";
+            boolean isAlarmSev = "CRITICAL".equals(sev) || "ALARM".equals(sev);
             String ack;
             if (Boolean.TRUE.equals(e.getAcknowledged())) {
                 String by   = e.getAcknowledgedBy()   != null ? e.getAcknowledgedBy()             : "—";
                 String when = e.getAcknowledgedTime() != null ? e.getAcknowledgedTime().format(DT_FMT) : "";
-                ack = "✓ " + by + (when.isEmpty() ? "" : "\n" + when);
+                ack = "OK " + by + (when.isEmpty() ? "" : "\n" + when);
             } else {
-                ack = "Bekliyor";
+                ack = isAlarmSev ? "Bekliyor" : "—";
             }
 
             addTableCell(table, dt,      rowBg, bfNorm, 6, Element.ALIGN_LEFT);

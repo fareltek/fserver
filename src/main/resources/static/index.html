@@ -474,6 +474,44 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
               padding:6px 16px; display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .ll-status { font-size:10px; color:var(--muted); margin-left:auto; }
 
+/* ── DASHBOARD TAB ───────────────────────────────────────────────────────── */
+.dash-body { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:20px; }
+.dash-body::-webkit-scrollbar { width:5px; }
+.dash-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.dash-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; }
+.dash-card { background:var(--surface); border:1px solid var(--border); border-radius:10px;
+             padding:14px 18px; display:flex; flex-direction:column; gap:4px; }
+.dash-card-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+.dash-card-value { font-size:22px; font-weight:700; }
+.dash-card-sub   { font-size:10px; color:var(--muted); }
+.dash-section-title { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;
+                      letter-spacing:.6px; margin-bottom:10px; padding-bottom:6px;
+                      border-bottom:1px solid var(--border); }
+.dash-alarm-table { width:100%; border-collapse:collapse; }
+.dash-alarm-table th { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;
+                       padding:5px 10px; text-align:left; border-bottom:1px solid var(--border); }
+.dash-alarm-table td { font-size:11px; padding:6px 10px; border-bottom:1px solid var(--surface); }
+.dash-alarm-table tr:hover td { background:var(--elevated); }
+.dash-empty { padding:32px; text-align:center; color:var(--muted); font-size:12px; }
+
+/* ── BÖLGE İZLEME TAB ────────────────────────────────────────────────────── */
+.bolge-body { flex:1; overflow-y:auto; padding:20px; }
+.bolge-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center;
+                     height:60%; gap:12px; color:var(--muted); }
+.bolge-placeholder-icon  { font-size:48px; opacity:.4; }
+.bolge-placeholder-title { font-size:15px; color:var(--muted); }
+.bolge-placeholder-sub   { font-size:11px; color:var(--subtle); }
+
+/* ── REPORT RADIO FILTERS ────────────────────────────────────────────────── */
+.rpt-radio-group { display:flex; flex-wrap:wrap; gap:4px; }
+.rpt-radio { display:inline-flex; align-items:center; cursor:pointer; }
+.rpt-radio input[type=radio] { display:none; }
+.rpt-radio span { padding:3px 9px; border-radius:12px; font-size:10px; font-weight:600;
+                  border:1px solid var(--border); color:var(--muted); background:var(--elevated);
+                  transition:all .15s; white-space:nowrap; }
+.rpt-radio input[type=radio]:checked + span { background:var(--blue-bg); color:var(--blue); border-color:var(--blue); }
+.rpt-radio:hover span { border-color:var(--muted); color:var(--text); }
+
 /* ── ARCHIVE TAB ──────────────────────────────────────────────────────────── */
 .arc-body { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:16px; }
 .arc-body::-webkit-scrollbar { width:5px; }
@@ -578,17 +616,51 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 </header>
 
 <div class="tabs">
-  <div class="tab active" id="tab-monitor"  onclick="switchTab('monitor')">📡 Canlı İzleme</div>
-  <div class="tab"        id="tab-sections" onclick="switchTab('sections')" style="display:none">⚙️ Section Yönetimi</div>
-  <div class="tab"        id="tab-report"   onclick="switchTab('report')">📊 Raporlama</div>
-  <div class="tab"        id="tab-archive"  onclick="switchTab('archive')">📁 Arşiv</div>
-  <div class="tab"        id="tab-livelog"  onclick="switchTab('livelog')" style="display:none">📟 Canlı Log</div>
-  <div class="tab"        id="tab-users"    onclick="switchTab('users')"    style="display:none">👥 Kullanıcılar</div>
-  <div class="tab"        id="tab-settings" onclick="switchTab('settings')" style="display:none">⚙ Ayarlar</div>
+  <div class="tab active" id="tab-dashboard" onclick="switchTab('dashboard')">🏠 Dashboard</div>
+  <div class="tab"        id="tab-monitor"   onclick="switchTab('monitor')">📡 Canlı İzleme</div>
+  <div class="tab"        id="tab-bolge"     onclick="switchTab('bolge')">🗺 Bölge İzleme</div>
+  <div class="tab"        id="tab-sections"  onclick="switchTab('sections')" style="display:none">🏢 Bölge Yönetimi</div>
+  <div class="tab"        id="tab-report"    onclick="switchTab('report')">📊 Raporlama</div>
+  <div class="tab"        id="tab-archive"   onclick="switchTab('archive')">📁 Arşiv</div>
+  <div class="tab"        id="tab-livelog"   onclick="switchTab('livelog')" style="display:none">📟 Canlı Log</div>
+  <div class="tab"        id="tab-users"     onclick="switchTab('users')"    style="display:none">👥 Kullanıcılar</div>
+  <div class="tab"        id="tab-settings"  onclick="switchTab('settings')" style="display:none">⚙ Ayarlar</div>
+</div>
+
+<!-- ══════════════════════════ DASHBOARD ═══════════════════════════════════ -->
+<div class="view active" id="view-dashboard">
+  <div class="dash-body">
+    <div class="dash-cards">
+      <div class="dash-card">
+        <span class="dash-card-label">Bağlı Bölgeler</span>
+        <span class="dash-card-value v-green" id="db-sections">—</span>
+      </div>
+      <div class="dash-card">
+        <span class="dash-card-label">Toplam Olay</span>
+        <span class="dash-card-value v-blue" id="db-total">—</span>
+      </div>
+      <div class="dash-card">
+        <span class="dash-card-label">Onaysız Alarm</span>
+        <span class="dash-card-value v-red" id="db-unack">—</span>
+      </div>
+      <div class="dash-card">
+        <span class="dash-card-label">Sunucu IP</span>
+        <span class="dash-card-value" style="font-size:14px" id="db-ip">—</span>
+      </div>
+      <div class="dash-card">
+        <span class="dash-card-label">Sunucu Saati (UTC)</span>
+        <span class="dash-card-value" style="font-size:13px" id="db-time">—</span>
+      </div>
+    </div>
+    <div>
+      <div class="dash-section-title">Son Kritik / Alarm Olaylar</div>
+      <div id="db-alarm-list"><div class="dash-empty">Yükleniyor...</div></div>
+    </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════ MONITOR ══════════════════════════════════ -->
-<div class="view active" id="view-monitor">
+<div class="view" id="view-monitor">
   <div class="stats">
     <div class="stat"><span class="stat-label">Toplam Paket</span><span class="stat-value v-green"  id="st-packets">0</span></div>
     <div class="stat"><span class="stat-label">Toplam Byte</span> <span class="stat-value v-blue"   id="st-bytes">0</span></div>
@@ -637,8 +709,8 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   <div class="log-wrap" id="log-wrap">
     <div class="empty" id="m-empty">
       <div class="empty-icon">📡</div>
-      <div class="empty-title">Veriler yükleniyor...</div>
-      <div class="empty-hint">DB geçmişi ve canlı SSE birleştirilecek</div>
+      <div class="empty-title">Olaylar bekleniyor</div>
+      <div class="empty-hint">Bağlantı kurulduğunda olaylar burada görünecek</div>
     </div>
     <table id="m-table" style="display:none">
       <thead>
@@ -660,19 +732,30 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   </div>
 </div>
 
-<!-- ══════════════════════════ SECTIONS ════════════════════════════════════ -->
+<!-- ══════════════════════ BÖLGE İZLEME ════════════════════════════════════ -->
+<div class="view" id="view-bolge">
+  <div class="bolge-body">
+    <div class="bolge-placeholder">
+      <div class="bolge-placeholder-icon">🗺</div>
+      <div class="bolge-placeholder-title">Bölge İzleme</div>
+      <div class="bolge-placeholder-sub">SCADA izleme arayüzü bu alanda yer alacak</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ BÖLGE YÖNETİMİ ══════════════════════════════ -->
 <div class="view" id="view-sections">
   <div class="sec-toolbar">
     <span class="sec-toolbar-title" id="sec-summary">Yükleniyor...</span>
-    <button class="btn primary" onclick="openAddForm()">+ Yeni Section</button>
+    <button class="btn primary" onclick="openAddForm()">+ Yeni Bölge</button>
     <button class="btn" onclick="loadSections()">↻ Yenile</button>
   </div>
   <div class="sec-body" id="sec-body">
     <div class="form-panel" id="sec-form">
-      <div class="form-title" id="form-title">Yeni Section Ekle</div>
+      <div class="form-title" id="form-title">Yeni Bölge Ekle</div>
       <input type="hidden" id="form-id">
       <div class="form-grid">
-        <div class="fg"><label class="fl">Section Adı *</label><input class="fi" id="form-name" type="text" placeholder="örn: BÖLÜM-1"></div>
+        <div class="fg"><label class="fl">Bölge Adı *</label><input class="fi" id="form-name" type="text" placeholder="örn: BÖLÜM-1"></div>
         <div class="fg"><label class="fl">Durum</label><select class="fs" id="form-enabled"><option value="true">Aktif</option><option value="false">Pasif</option></select></div>
         <div class="fg"><label class="fl">Host (IP) *</label><input class="fi" id="form-host" type="text" placeholder="192.168.1.100"></div>
         <div class="fg"><label class="fl">Port</label><input class="fi" id="form-port" type="number" placeholder="4001" min="1" max="65535"></div>
@@ -700,36 +783,8 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
       <input class="rpt-input" id="rpt-to" type="date">
     </div>
     <div class="rpt-fg">
-      <label class="rpt-label">Section / Kaynak</label>
+      <label class="rpt-label">Bölge</label>
       <select class="rpt-sel" id="rpt-sect"><option value="">Tümü</option></select>
-    </div>
-    <div class="rpt-fg">
-      <label class="rpt-label">Ciddiyet</label>
-      <select class="rpt-sel" id="rpt-sev">
-        <option value="">Tümü</option>
-        <option value="INFO">INFO</option>
-        <option value="WARNING">WARNING</option>
-        <option value="ALARM">ALARM</option>
-        <option value="CRITICAL">CRITICAL</option>
-      </select>
-    </div>
-    <div class="rpt-fg">
-      <label class="rpt-label">Mesaj Tipi</label>
-      <select class="rpt-sel" id="rpt-msgtype">
-        <option value="">Tümü</option>
-        <option value="PERIODIC">PERIODIC</option>
-        <option value="HARDWARE">HARDWARE</option>
-        <option value="HEARTBEAT">HEARTBEAT</option>
-        <option value="RAW_DATA">RAW_DATA</option>
-      </select>
-    </div>
-    <div class="rpt-fg">
-      <label class="rpt-label">Onay Durumu</label>
-      <select class="rpt-sel" id="rpt-ack">
-        <option value="">Tümü</option>
-        <option value="false">Onaysız</option>
-        <option value="true">Onaylı</option>
-      </select>
     </div>
     <div class="rpt-fg">
       <label class="rpt-label">Limit</label>
@@ -740,9 +795,46 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
         <option value="1000">Son 1000</option>
       </select>
     </div>
-    <div class="rpt-actions">
-      <button class="btn" onclick="fetchRecentReport()">Son 100 Kayıt</button>
-      <button class="btn primary" onclick="fetchReport()">🔍 Filtreli Getir</button>
+    <div class="rpt-fg" style="width:100%">
+      <label class="rpt-label">Ciddiyet</label>
+      <div class="rpt-radio-group" id="rpt-sev-group">
+        <label class="rpt-radio"><input type="radio" name="rpt-sev" value="" checked><span>Tümü</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-sev" value="INFO"><span>INFO</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-sev" value="WARNING"><span>WARNING</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-sev" value="ALARM"><span>ALARM</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-sev" value="CRITICAL"><span>CRITICAL</span></label>
+      </div>
+    </div>
+    <div class="rpt-fg" style="width:100%">
+      <label class="rpt-label">Mesaj Tipi</label>
+      <div class="rpt-radio-group">
+        <label class="rpt-radio"><input type="radio" name="rpt-msgtype" value="" checked><span>Tümü</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-msgtype" value="PERIODIC"><span>PERIODIC</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-msgtype" value="SPONTANEOUS"><span>SPONTANEOUS</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-msgtype" value="HARDWARE"><span>HARDWARE</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-msgtype" value="HEARTBEAT"><span>HEARTBEAT</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-msgtype" value="SYSTEM"><span>SYSTEM</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-msgtype" value="RAW_DATA"><span>RAW_DATA</span></label>
+      </div>
+    </div>
+    <div class="rpt-fg" style="width:100%">
+      <label class="rpt-label">Kaynak Tipi</label>
+      <div class="rpt-radio-group">
+        <label class="rpt-radio"><input type="radio" name="rpt-devtype" value="" checked><span>Tümü</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-devtype" value="FA51-CPU"><span>FA51-CPU</span></label>
+      </div>
+    </div>
+    <div class="rpt-fg" style="width:100%">
+      <label class="rpt-label">Onay Durumu</label>
+      <div class="rpt-radio-group">
+        <label class="rpt-radio"><input type="radio" name="rpt-ack" value="" checked><span>Tümü</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-ack" value="false"><span>Onaysız</span></label>
+        <label class="rpt-radio"><input type="radio" name="rpt-ack" value="true"><span>Onaylı</span></label>
+      </div>
+    </div>
+    <div class="rpt-actions" style="width:100%">
+      <button class="btn primary" onclick="fetchReport()">🔍 Getir</button>
+      <button class="btn" onclick="clearReport()">Temizle</button>
       <button class="btn" id="btn-csv" onclick="exportCSV()" disabled>📥 CSV İndir</button>
       <button class="btn success" id="btn-pdf" onclick="exportPDF()" disabled>⬇ PDF İndir</button>
     </div>
@@ -946,7 +1038,7 @@ function applyRoleUI(role) {
   const canAck    = role === 'OPERATOR' || role === 'MANAGER';
   const canManage = role === 'MANAGER';
 
-  // Tabs: Sections, Live Log, Users → MANAGER only
+  // Tabs: Bölge Yönetimi, Live Log, Users, Settings → MANAGER only
   document.getElementById('tab-sections').style.display = canManage ? '' : 'none';
   document.getElementById('tab-livelog').style.display  = canManage ? '' : 'none';
   document.getElementById('tab-users').style.display    = canManage ? '' : 'none';
@@ -988,6 +1080,7 @@ async function initApp() {
   connect();
   await loadSectionFilters();
   refreshGlobalStats();
+  loadDashboard();
 }
 
 // ── GLOBALS ───────────────────────────────────────────────────────────────
@@ -1030,12 +1123,13 @@ function switchTab(name) {
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.getElementById('view-'+name).classList.add('active');
-  if (name==='sections') loadSections();
-  if (name==='report')   initReportTab();
-  if (name==='archive')  loadArchive();
-  if (name==='livelog')  startLiveLog();
-  if (name==='users')    loadUsers();
-  if (name==='settings') loadSettings();
+  if (name==='dashboard') loadDashboard();
+  if (name==='sections')  loadSections();
+  if (name==='report')    initReportTab();
+  if (name==='archive')   loadArchive();
+  if (name==='livelog')   startLiveLog();
+  if (name==='users')     loadUsers();
+  if (name==='settings')  loadSettings();
 }
 
 // ── SSE ───────────────────────────────────────────────────────────────────
@@ -1440,23 +1534,17 @@ function initReportTab() {
     });
   }).catch(()=>{});
 
-  // Auto-load recent 100 on first switch
-  if (reportData.length === 0) fetchRecentReport();
-}
-
-async function fetchRecentReport() {
-  reportParams = { limit: 100 };
-  await doFetch('/api/events/report?limit=100');
 }
 
 async function fetchReport() {
   const from    = document.getElementById('rpt-from').value;
   const to      = document.getElementById('rpt-to').value;
-  const sev     = document.getElementById('rpt-sev').value;
   const sAddr   = document.getElementById('rpt-sect').value;
-  const msgType = document.getElementById('rpt-msgtype').value;
-  const ack     = document.getElementById('rpt-ack').value;
   const limit   = document.getElementById('rpt-limit').value;
+  const sev     = document.querySelector('input[name="rpt-sev"]:checked')?.value     || '';
+  const msgType = document.querySelector('input[name="rpt-msgtype"]:checked')?.value || '';
+  const devType = document.querySelector('input[name="rpt-devtype"]:checked')?.value || '';
+  const ack     = document.querySelector('input[name="rpt-ack"]:checked')?.value     || '';
 
   const p = new URLSearchParams();
   if (from)    p.set('from', from);
@@ -1464,11 +1552,20 @@ async function fetchReport() {
   if (sev)     p.set('severity', sev);
   if (sAddr)   p.set('sourceAddr', sAddr);
   if (msgType) p.set('messageType', msgType);
+  if (devType) p.set('deviceType', devType);
   if (ack)     p.set('acknowledged', ack);
   if (limit)   p.set('limit', limit);
 
-  reportParams = { from, to, sev, sAddr, msgType, ack, limit };
+  reportParams = { from, to, sev, sAddr, msgType, devType, ack, limit };
   await doFetch('/api/events/report?' + p);
+}
+
+function clearReport() {
+  reportData = [];
+  document.getElementById('rpt-result').innerHTML = '<div class="rpt-empty">Filtre seçip "Getir" butonuna tıklayın.</div>';
+  document.getElementById('rpt-summary').style.display = 'none';
+  document.getElementById('btn-csv').disabled = true;
+  document.getElementById('btn-pdf').disabled = true;
 }
 
 async function doFetch(url) {
@@ -1583,6 +1680,7 @@ async function exportPDF() {
     if (rp.sev)     p.set('severity',    rp.sev);
     if (rp.sAddr)   p.set('sourceAddr',  rp.sAddr);
     if (rp.msgType) p.set('messageType', rp.msgType);
+    if (rp.devType) p.set('deviceType',  rp.devType);
     if (rp.ack)     p.set('acknowledged',rp.ack);
     if (rp.limit)   p.set('limit',       rp.limit);
 
@@ -2150,10 +2248,56 @@ async function refreshGlobalStats() {
   } catch(e) {}
 }
 
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const r = await authFetch('/api/stats');
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('db-sections').textContent = d.connectedSections ?? '—';
+    document.getElementById('db-total').textContent    = (d.totalEvents ?? '—').toLocaleString?.() ?? d.totalEvents;
+    document.getElementById('db-unack').textContent    = d.unacknowledgedAlarms ?? '—';
+    document.getElementById('db-ip').textContent       = _serverIp || '—';
+    document.getElementById('db-time').textContent     = d.serverTime ? d.serverTime.substring(0,19).replace('T',' ') : '—';
+  } catch(e) {}
+
+  try {
+    const r2 = await authFetch('/api/events/report?severity=ALARM&limit=10');
+    const r3 = await authFetch('/api/events/report?severity=CRITICAL&limit=10');
+    const alarms = (r2.ok ? await r2.json() : []).concat(r3.ok ? await r3.json() : []);
+    alarms.sort((a,b) => (b.eventTime||'').localeCompare(a.eventTime||''));
+    const top = alarms.slice(0, 10);
+    const container = document.getElementById('db-alarm-list');
+    if (top.length === 0) {
+      container.innerHTML = '<div class="dash-empty">Kritik veya alarm seviyesinde olay yok.</div>';
+      return;
+    }
+    const sevCss = s => ({INFO:'b-info',WARNING:'b-warning',ALARM:'b-alarm',CRITICAL:'b-critical'}[s]||'b-raw');
+    container.innerHTML = `<table class="dash-alarm-table">
+      <thead><tr><th>Zaman</th><th>Ciddiyet</th><th>Bölge</th><th>Açıklama</th><th>Onay</th></tr></thead>
+      <tbody>${top.map(e => {
+        const sev  = e.severity || 'INFO';
+        const isSys = e.messageType === 'SYSTEM';
+        const bolge = isSys ? 'SERVER' : (e.sourceAddr || '—');
+        const dt    = e.eventTime ? toLocalTime(e.eventTime, true) : '—';
+        const desc  = (e.description||'—').substring(0,80);
+        const ack   = e.acknowledged
+          ? `<span class="badge b-ack">✓</span>`
+          : `<span class="badge b-unack">Bekliyor</span>`;
+        return `<tr><td class="c-time">${esc(dt)}</td>
+          <td><span class="badge ${sevCss(sev)}">${sev}</span></td>
+          <td class="c-name">${esc(bolge)}</td>
+          <td class="c-hex">${esc(desc)}</td>
+          <td class="c-ack">${ack}</td></tr>`;
+      }).join('')}</tbody></table>`;
+  } catch(e) {}
+}
+
 // ── AUTO-REFRESH ──────────────────────────────────────────────────────────
 setInterval(() => {
   if (document.getElementById('view-sections').classList.contains('active')) loadSections();
-}, 5000);
+  if (document.getElementById('view-dashboard').classList.contains('active')) loadDashboard();
+}, 30000);
 setInterval(refreshGlobalStats, 30000);
 
 // ── INIT ──────────────────────────────────────────────────────────────────

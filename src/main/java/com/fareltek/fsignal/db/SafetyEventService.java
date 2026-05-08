@@ -46,7 +46,8 @@ public class SafetyEventService {
 
     public Flux<SafetyEvent> getFiltered(OffsetDateTime from, OffsetDateTime to,
                                           String severity, String sourceAddr,
-                                          String messageType, Boolean acknowledged) {
+                                          String messageType, String deviceType,
+                                          Boolean acknowledged) {
         Flux<SafetyEvent> base = (from != null && to != null)
                 ? repository.findByEventTimeBetweenOrderByEventTimeDesc(from, to)
                 : repository.findTop500ByOrderByEventTimeDesc();
@@ -57,6 +58,8 @@ public class SafetyEventService {
             base = base.filter(e -> sourceAddr.equals(e.getSourceAddr()));
         if (messageType != null && !messageType.isBlank())
             base = base.filter(e -> messageType.equalsIgnoreCase(e.getMessageType()));
+        if (deviceType  != null && !deviceType.isBlank())
+            base = base.filter(e -> deviceType.equalsIgnoreCase(e.getDeviceType()));
         if (acknowledged != null)
             base = base.filter(e -> acknowledged.equals(e.getAcknowledged()));
         return base;

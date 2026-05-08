@@ -100,12 +100,13 @@ public class MonitorController {
             @RequestParam(required = false) String severity,
             @RequestParam(required = false) String sourceAddr,
             @RequestParam(required = false) String messageType,
+            @RequestParam(required = false) String deviceType,
             @RequestParam(required = false) Boolean acknowledged,
             @RequestParam(defaultValue = "500") int limit) {
         OffsetDateTime fromDt = from != null ? LocalDate.parse(from).atStartOfDay().atOffset(ZoneOffset.UTC) : null;
         OffsetDateTime toDt   = to   != null ? LocalDate.parse(to).atTime(23, 59, 59).atOffset(ZoneOffset.UTC) : null;
         return safetyEventService
-                .getFiltered(fromDt, toDt, severity, sourceAddr, messageType, acknowledged)
+                .getFiltered(fromDt, toDt, severity, sourceAddr, messageType, deviceType, acknowledged)
                 .take(limit).map(this::toDto).collectList();
     }
 
@@ -117,6 +118,7 @@ public class MonitorController {
             @RequestParam(required = false) String severity,
             @RequestParam(required = false) String sourceAddr,
             @RequestParam(required = false) String messageType,
+            @RequestParam(required = false) String deviceType,
             @RequestParam(required = false) Boolean acknowledged,
             @RequestParam(defaultValue = "500") int limit,
             Authentication auth) {
@@ -124,7 +126,7 @@ public class MonitorController {
         OffsetDateTime fromDt = from != null ? LocalDate.parse(from).atStartOfDay().atOffset(ZoneOffset.UTC) : null;
         OffsetDateTime toDt   = to   != null ? LocalDate.parse(to).atTime(23, 59, 59).atOffset(ZoneOffset.UTC) : null;
         return safetyEventService
-                .getFiltered(fromDt, toDt, severity, sourceAddr, messageType, acknowledged)
+                .getFiltered(fromDt, toDt, severity, sourceAddr, messageType, deviceType, acknowledged)
                 .take(limit).collectList()
                 .flatMap(events -> Mono.fromCallable(() ->
                         pdfReportService.generate(events, from, to, severity, sourceAddr, messageType, acknowledged))
@@ -142,11 +144,18 @@ public class MonitorController {
 
     private String nvl(String s) { return s != null ? s : "*"; }
 
+    private String formatActor(Authentication auth) {
+        if (auth == null) return "system";
+        String role = auth.getAuthorities().stream().findFirst()
+                .map(a -> a.getAuthority().replace("ROLE_", "")).orElse("");
+        return auth.getName() + (role.isEmpty() ? "" : " (" + role + ")");
+    }
+
     @PostMapping("/api/events/{id}/acknowledge")
     public Mono<Map<String, Object>> acknowledge(
             @PathVariable UUID id,
             Authentication auth) {
-        String by = auth != null ? auth.getName() : "system";
+        String by = formatActor(auth);
         return safetyEventService.acknowledge(id, by)
                 .flatMap(event -> safetyEventService.saveSystemEvent("SYSTEM", "INFO",
                         "Olay onaylandı: ID=" + event.getId()
@@ -158,7 +167,7 @@ public class MonitorController {
 
     @PostMapping("/api/events/acknowledge-all")
     public Mono<Map<String, Object>> acknowledgeAll(Authentication auth) {
-        String by = auth != null ? auth.getName() : "system";
+        String by = formatActor(auth);
         return safetyEventService.acknowledgeAllAlarms(by)
                 .flatMap(count -> safetyEventService.saveSystemEvent("SYSTEM", "INFO",
                         "Tüm alarmlar onaylandı (" + count + " olay) | İşlem: " + by)
