@@ -418,35 +418,33 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 .role-guest    { background:var(--elevated); color:var(--muted); border:1px solid var(--border); }
 
 /* ── SETTINGS TAB ────────────────────────────────────────────────────────── */
-.settings-body { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:14px; }
-.settings-body::-webkit-scrollbar { width:5px; }
-.settings-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-.cfg-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-.cfg-card-hdr { display:flex; align-items:center; gap:10px; padding:9px 16px;
-                background:var(--elevated); border-bottom:1px solid var(--border); }
-.cfg-card-icon  { font-size:14px; }
-.cfg-card-title { font-size:12px; font-weight:700; color:var(--text); }
-.cfg-card-sub   { font-size:10px; color:var(--muted); margin-left:auto; }
-.cfg-tbl { width:100%; border-collapse:collapse; }
-.cfg-tbl tr { border-bottom:1px solid var(--border); transition:background .1s; }
-.cfg-tbl tr:last-child { border-bottom:none; }
-.cfg-tbl tr:hover { background:rgba(255,255,255,.02); }
-.cfg-tbl td { padding:9px 14px; vertical-align:middle; }
-.cfg-lbl      { font-size:11px; font-weight:600; color:var(--text); white-space:nowrap; }
-.cfg-lbl-desc { font-size:9px; color:var(--muted); margin-top:2px; }
-.cfg-lbl-audit{ font-size:9px; color:var(--subtle); margin-top:1px; }
-.cfg-inp-cell { white-space:nowrap; }
-.cfg-inp-row  { display:flex; align-items:center; gap:5px; }
-.cfg-inp      { width:150px; }
-.cfg-inp-unit { font-size:10px; color:var(--muted); }
-.cfg-inp-hint { font-size:9px; color:var(--blue); margin-top:3px; }
-.cfg-badge-cell { white-space:nowrap; }
-.cfg-tag { display:inline-block; font-size:9px; padding:2px 7px; border-radius:3px; font-weight:600; white-space:nowrap; }
+.cfg-scroll { flex:1; overflow-y:auto; background:var(--bg); }
+.cfg-scroll::-webkit-scrollbar { width:5px; }
+.cfg-scroll::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.cfg-sec-hdr { display:flex; align-items:center; gap:9px; padding:8px 24px;
+               background:var(--elevated); border-top:1px solid var(--border);
+               border-bottom:1px solid var(--border); position:sticky; top:0; z-index:1; }
+.cfg-sec-icon { font-size:13px; }
+.cfg-sec-name { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.7px; color:var(--text); }
+.cfg-sec-sub  { font-size:10px; color:var(--muted); margin-left:4px; }
+.cfg-row { display:flex; align-items:center; gap:16px; padding:11px 24px;
+           border-bottom:1px solid var(--border); background:var(--surface); }
+.cfg-row:hover { background:var(--elevated); }
+.cfg-row-info { flex:1; min-width:0; }
+.cfg-row-name  { font-size:11px; font-weight:600; color:var(--text); }
+.cfg-row-desc  { font-size:10px; color:var(--muted); margin-top:2px; }
+.cfg-row-audit { font-size:9px; color:var(--subtle); margin-top:1px; }
+.cfg-row-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+.cfg-row-top   { display:flex; align-items:center; gap:7px; }
+.cfg-row-inp   { width:190px; }
+.cfg-row-unit  { font-size:10px; color:var(--muted); min-width:22px; }
+.cfg-row-hint  { font-size:9px; color:var(--blue); align-self:flex-end; }
+.cfg-row-bottom{ display:flex; align-items:center; gap:8px; }
+.cfg-tag { font-size:9px; padding:1px 7px; border-radius:3px; font-weight:600; white-space:nowrap; }
 .cfg-tag-restart{ background:var(--yellow-bg); color:var(--yellow); border:1px solid var(--yellow); }
 .cfg-tag-sched  { background:var(--blue-bg);   color:var(--blue);   border:1px solid var(--blue);   }
-.cfg-tag-live   { background:var(--green-bg);  color:var(--green);  border:1px solid var(--green);  }
-.cfg-act-cell { text-align:right; white-space:nowrap; min-width:90px; }
-.cfg-fb { display:block; font-size:9px; margin-top:3px; text-align:right; min-height:12px; }
+.cfg-tag-live   { font-size:9px; color:var(--green); }
+.cfg-row-fb { font-size:10px; }
 
 /* ── LIVE LOG TAB ─────────────────────────────────────────────────────────── */
 .ll-wrap  { flex:1; overflow-y:auto; background:var(--bg); }
@@ -821,7 +819,7 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
     <span class="sec-toolbar-title">Sistem Ayarları</span>
     <button class="btn" onclick="loadSettings()">↻ Yenile</button>
   </div>
-  <div class="settings-body" id="cfg-body">
+  <div class="cfg-scroll" id="cfg-body">
     <div class="rpt-loading"><span class="spinner">⏳</span> Yükleniyor...</div>
   </div>
 </div>
@@ -2199,52 +2197,50 @@ function renderSettings(configs) {
   for (const gkey of ['ntp','security','retention','health']) {
     if (!groups[gkey]) continue;
     const g = CFG_GROUPS[gkey] || { title: gkey, icon: '', sub: '' };
-    html += `<div class="cfg-card">
-  <div class="cfg-card-hdr">
-    <span class="cfg-card-icon">${g.icon}</span>
-    <span class="cfg-card-title">${g.title}</span>
-    <span class="cfg-card-sub">${g.sub}</span>
-  </div>
-  <table class="cfg-tbl"><tbody>`;
+
+    html += `<div class="cfg-sec-hdr">
+  <span class="cfg-sec-icon">${g.icon}</span>
+  <span class="cfg-sec-name">${g.title}</span>
+  <span class="cfg-sec-sub">— ${g.sub}</span>
+</div>`;
 
     for (const c of groups[gkey]) {
-      const m      = CFG_META[c.key] || { label: c.key, unit: '', type: 'text' };
-      const cid    = cfgId(c.key);
-      const isMs   = CFG_MS_KEYS.has(c.key);
-      const inpType= m.type === 'number' ? 'number" min="0' : 'text';
-      const oninput= isMs ? `oninput="updateMsHint('${cid}',this.value)"` : '';
+      const m   = CFG_META[c.key] || { label: c.key, unit: '', type: 'text' };
+      const cid = cfgId(c.key);
+      const isMs = CFG_MS_KEYS.has(c.key);
+      const inpAttr = m.type === 'number' ? 'type="number" min="0"' : 'type="text"';
+      const oninput = isMs ? `oninput="updateMsHint('${cid}',this.value)"` : '';
 
       const tag = c.requiresRestart
-        ? '<span class="cfg-tag cfg-tag-restart">↺ Restart gerektirir</span>'
+        ? '<span class="cfg-tag cfg-tag-restart">↺ Yeniden başlatma gerektirir</span>'
         : CFG_SCHED_KEYS.has(c.key)
-          ? '<span class="cfg-tag cfg-tag-sched">⟳ Anlık yeniden planlanır</span>'
+          ? '<span class="cfg-tag cfg-tag-sched">⟳ Zamanlayıcı anlık güncellenir</span>'
           : '<span class="cfg-tag cfg-tag-live">● Anlık uygulanır</span>';
 
       const audit = c.updatedAt
-        ? `${esc(c.updatedBy||'system')} · ${c.updatedAt.substring(0,16).replace('T',' ')}`
+        ? `Son: ${esc(c.updatedBy||'system')} · ${c.updatedAt.substring(0,16).replace('T',' ')}`
         : '';
 
-      html += `<tr>
-  <td style="width:36%">
-    <div class="cfg-lbl">${esc(m.label)}</div>
-    <div class="cfg-lbl-desc">${esc(c.description)}</div>
-    ${audit ? `<div class="cfg-lbl-audit" id="ca-${cid}">Son: ${audit}</div>` : `<div class="cfg-lbl-audit" id="ca-${cid}"></div>`}
-  </td>
-  <td class="cfg-inp-cell">
-    <div class="cfg-inp-row">
-      <input type="${inpType}" class="inp cfg-inp" id="ci-${cid}" value="${esc(c.value)}" ${oninput}>
-      ${m.unit ? `<span class="cfg-inp-unit">${m.unit}</span>` : ''}
+      html += `<div class="cfg-row">
+  <div class="cfg-row-info">
+    <div class="cfg-row-name">${esc(m.label)}</div>
+    <div class="cfg-row-desc">${esc(c.description)}</div>
+    <div class="cfg-row-audit" id="ca-${cid}">${audit}</div>
+  </div>
+  <div class="cfg-row-right">
+    <div class="cfg-row-top">
+      <input ${inpAttr} class="inp cfg-row-inp" id="ci-${cid}" value="${esc(c.value)}" ${oninput}>
+      ${m.unit ? `<span class="cfg-row-unit">${m.unit}</span>` : ''}
+      <button class="btn sm success" onclick="saveConfig('${esc(c.key)}')">Kaydet</button>
     </div>
-    ${isMs ? `<div class="cfg-inp-hint" id="msh-${cid}">${msToHuman(c.value)}</div>` : ''}
-  </td>
-  <td class="cfg-badge-cell">${tag}</td>
-  <td class="cfg-act-cell">
-    <button class="btn sm success" onclick="saveConfig('${esc(c.key)}')">Kaydet</button>
-    <span class="cfg-fb" id="cf-${cid}"></span>
-  </td>
-</tr>`;
+    <div class="cfg-row-bottom">
+      ${isMs ? `<span class="cfg-row-hint" id="msh-${cid}">${msToHuman(c.value)}</span>` : ''}
+      ${tag}
+      <span class="cfg-row-fb" id="cf-${cid}"></span>
+    </div>
+  </div>
+</div>`;
     }
-    html += '</tbody></table></div>';
   }
   document.getElementById('cfg-body').innerHTML = html;
 }
