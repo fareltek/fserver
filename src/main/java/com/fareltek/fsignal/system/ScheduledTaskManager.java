@@ -8,6 +8,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +41,8 @@ public class ScheduledTaskManager implements ApplicationRunner {
         taskScheduler.setPoolSize(3);
         taskScheduler.setThreadNamePrefix("fsignal-sched-");
         taskScheduler.initialize();
+
+        ensureArchiveDir();
 
         long healthMs = configService.getLong("health.check-interval-ms",    1_800_000L);
         long ntpMs    = configService.getLong("health.ntp-check-interval-ms", 21_600_000L);
@@ -72,6 +77,16 @@ public class ScheduledTaskManager implements ApplicationRunner {
         futures.put("retention", taskScheduler.schedule(
                 retentionScheduler::runRetention, new CronTrigger(cron)));
         log.info("[SCHED] Veri saklama yeniden planlandı: cron={}", cron);
+    }
+
+    private void ensureArchiveDir() {
+        String path = configService.getSync("archive.path", "./archive");
+        try {
+            Files.createDirectories(Paths.get(path));
+            log.info("[SCHED] Arşiv dizini hazır: {}", Paths.get(path).toAbsolutePath());
+        } catch (IOException e) {
+            log.warn("[SCHED] Arşiv dizini oluşturulamadı: {} — {}", path, e.getMessage());
+        }
     }
 
     private void cancel(String name) {
