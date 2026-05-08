@@ -7,11 +7,20 @@ import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.net.InetAddress;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
 public class PdfReportService {
+
+    private static final String SERVER_IP;
+    static {
+        String ip;
+        try { ip = InetAddress.getLocalHost().getHostAddress(); }
+        catch (Exception ignored) { ip = "SERVER"; }
+        SERVER_IP = ip;
+    }
 
     private static final Color COL_DARK_BLUE  = new Color(15, 43, 84);
     private static final Color COL_MID_BLUE   = new Color(26, 82, 158);
@@ -232,7 +241,7 @@ public class PdfReportService {
         table.setHeaderRows(1);
 
         String[] headers = {"Zaman", "Bolge Adi", "Bolge IP", "Ciddiyet", "Mesaj Tipi",
-                            "Cihaz Tipi", "CihazID", "Kod", "Aciklama", "Onay"};
+                            "Kaynak Tipi", "Kaynak ID", "Data", "Aciklama", "Onay"};
         for (String h : headers) {
             PdfPCell hCell = new PdfPCell(new Phrase(h, new Font(bfBold, 6, Font.BOLD, Color.WHITE)));
             hCell.setBackgroundColor(COL_DARK_BLUE);
@@ -251,7 +260,9 @@ public class PdfReportService {
             else if ("WARNING".equals(sev)) rowBg = COL_YELLOW_BG;
 
             String dt      = e.getEventTime()   != null ? e.getEventTime().format(DT_FMT)   : "—";
-            String bolgIp  = e.getSourceAddr()   != null ? e.getSourceAddr()                 : "—";
+            boolean isSys  = "SYSTEM".equals(e.getMessageType());
+            String bolgAdi = isSys ? "SERVER" : "—";
+            String bolgIp  = isSys ? SERVER_IP : (e.getSourceAddr() != null ? e.getSourceAddr() : "—");
             String desc    = e.getDescription()  != null
                     ? (e.getDescription().length() > 50 ? e.getDescription().substring(0, 50) + "…" : e.getDescription())
                     : "—";
@@ -268,7 +279,7 @@ public class PdfReportService {
             }
 
             addTableCell(table, dt,      rowBg, bfNorm, 6, Element.ALIGN_LEFT);
-            addTableCell(table, "—",     rowBg, bfNorm, 6, Element.ALIGN_LEFT);
+            addTableCell(table, bolgAdi, rowBg, bfNorm, 6, Element.ALIGN_LEFT);
             addTableCell(table, bolgIp,  rowBg, bfNorm, 6, Element.ALIGN_LEFT);
             addTableCell(table, sev,     rowBg, bfBold, 6, Element.ALIGN_CENTER);
             addTableCell(table, e.getMessageType() != null ? e.getMessageType() : "—", rowBg, bfNorm, 6, Element.ALIGN_CENTER);
