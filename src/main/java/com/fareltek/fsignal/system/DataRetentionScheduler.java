@@ -5,6 +5,7 @@ import com.fareltek.fsignal.db.SafetyEventService;
 import io.r2dbc.spi.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -23,6 +24,9 @@ public class DataRetentionScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(DataRetentionScheduler.class);
 
+    @Value("${fsignal.archive.path:./fsignal}")
+    private String archivePath;
+
     private final SafetyEventService eventService;
     private final DatabaseClient     dbClient;
     private final SystemConfigService configService;
@@ -38,7 +42,6 @@ public class DataRetentionScheduler {
     /** Called by ScheduledTaskManager — schedule configured via system_config (retention.run-hour/minute). */
     public void runRetention() {
         int    retentionDays = (int) configService.getLong("retention.days", 730L);
-        String archivePath   = configService.getSync("archive.path", "./archive");
         OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(retentionDays);
         log.info("[RETENTION] Başlıyor — {} günden eski olaylar arşivleniyor (cutoff={})", retentionDays, cutoff);
 
@@ -49,7 +52,7 @@ public class DataRetentionScheduler {
                         return eventService.saveSystemEvent("SYSTEM", "INFO",
                                 "Veri saklama kontrolü: arşivlenecek olay yok (cutoff=" + cutoff.toLocalDate() + ")");
                     }
-                    return archiveToCsv(events, cutoff, archivePath)
+                    return archiveToCsv(events, cutoff, this.archivePath)
                             .flatMap(csvPath -> bulkDelete(cutoff)
                                     .flatMap(deleted -> eventService.saveSystemEvent("SYSTEM", "INFO",
                                             "Veri arşivlendi: " + deleted + " olay silindi"
@@ -64,9 +67,9 @@ public class DataRetentionScheduler {
                 .subscribe();
     }
 
-    private Mono<String> archiveToCsv(List<SafetyEvent> events, OffsetDateTime cutoff, String archivePath) {
+    private Mono<String> archiveToCsv(List<SafetyEvent> events, OffsetDateTime cutoff, String path) {
         return Mono.fromCallable(() -> {
-            Path dir = Paths.get(archivePath).resolve("retention");
+            Path dir = Paths.get(path).resolve("retention");
             Files.createDirectories(dir);
             String fileName = "retention-" + LocalDate.now(ZoneOffset.UTC) + "-cutoff-"
                     + cutoff.toLocalDate() + ".csv";

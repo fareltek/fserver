@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <springProperty scope="context" name="archivePath" source="fsignal.archive.path" defaultValue="./archive"/>
+    <springProperty scope="context" name="logPath" source="fsignal.log.path" defaultValue="./fsignal/logs"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -10,9 +10,9 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${archivePath}/logs/fsignal.log</file>
+        <file>${logPath}/fsignal.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${archivePath}/logs/fsignal.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <fileNamePattern>${logPath}/fsignal.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
             <maxHistory>365</maxHistory>
             <totalSizeCap>2GB</totalSizeCap>
         </rollingPolicy>

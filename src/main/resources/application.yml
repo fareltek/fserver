@@ -18,7 +18,9 @@ spring:
 
 fsignal:
   archive:
-    path: ${ARCHIVE_PATH:./archive}
+    path: ${ARCHIVE_PATH:./fsignal}
+  log:
+    path: ${LOG_PATH:./fsignal/logs}
   retention:
     days: ${RETENTION_DAYS:730}
   ntp:

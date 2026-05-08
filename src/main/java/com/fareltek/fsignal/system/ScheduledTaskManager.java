@@ -2,6 +2,7 @@ package com.fareltek.fsignal.system;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -20,6 +21,9 @@ import java.util.concurrent.ScheduledFuture;
 public class ScheduledTaskManager implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(ScheduledTaskManager.class);
+
+    @Value("${fsignal.archive.path:./fsignal}")
+    private String archivePath;
 
     private final SystemHealthScheduler  healthScheduler;
     private final DataRetentionScheduler retentionScheduler;
@@ -80,12 +84,11 @@ public class ScheduledTaskManager implements ApplicationRunner {
     }
 
     private void ensureArchiveDir() {
-        String path = configService.getSync("archive.path", "./archive");
         try {
-            Files.createDirectories(Paths.get(path));
-            log.info("[SCHED] Arşiv dizini hazır: {}", Paths.get(path).toAbsolutePath());
+            Files.createDirectories(Paths.get(archivePath));
+            log.info("[SCHED] Arşiv dizini hazır: {}", Paths.get(archivePath).toAbsolutePath());
         } catch (IOException e) {
-            log.warn("[SCHED] Arşiv dizini oluşturulamadı: {} — {}", path, e.getMessage());
+            log.warn("[SCHED] Arşiv dizini oluşturulamadı: {} — {}", archivePath, e.getMessage());
         }
     }
 

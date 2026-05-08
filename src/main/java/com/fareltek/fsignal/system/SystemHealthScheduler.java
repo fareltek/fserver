@@ -3,6 +3,7 @@ package com.fareltek.fsignal.system;
 import com.fareltek.fsignal.db.SafetyEventService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -22,6 +23,9 @@ public class SystemHealthScheduler {
     private static final long   GB  = 1024L * 1024 * 1024;
     private static final long   MB  = 1024L * 1024;
 
+    @Value("${fsignal.archive.path:./fsignal}")
+    private String archivePath;
+
     private final SafetyEventService eventService;
     private final SystemConfigService configService;
 
@@ -32,8 +36,7 @@ public class SystemHealthScheduler {
 
     /** Called by ScheduledTaskManager — interval configured via system_config. */
     public void healthCheck() {
-        String archivePath  = configService.getSync("archive.path", "./archive");
-        int    diskWarnPct  = (int) configService.getLong("health.disk-warn-pct", 85L);
+        int diskWarnPct = (int) configService.getLong("health.disk-warn-pct", 85L);
 
         String time         = OffsetDateTime.now(ZoneOffset.UTC).toString();
         String uptime       = formatUptime(ManagementFactory.getRuntimeMXBean().getUptime());
@@ -82,9 +85,9 @@ public class SystemHealthScheduler {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
-    private String diskInfo(String archivePath) {
+    private String diskInfo(String path) {
         try {
-            FileStore fs    = Files.getFileStore(Paths.get(archivePath).toAbsolutePath());
+            FileStore fs    = Files.getFileStore(Paths.get(path).toAbsolutePath());
             long total      = fs.getTotalSpace();
             long free       = fs.getUsableSpace();
             long used       = total - free;
@@ -95,9 +98,9 @@ public class SystemHealthScheduler {
         }
     }
 
-    private int diskUsagePct(String archivePath) {
+    private int diskUsagePct(String path) {
         try {
-            FileStore fs = Files.getFileStore(Paths.get(archivePath).toAbsolutePath());
+            FileStore fs = Files.getFileStore(Paths.get(path).toAbsolutePath());
             long total   = fs.getTotalSpace();
             if (total == 0) return 0;
             return (int) ((total - fs.getUsableSpace()) * 100L / total);
