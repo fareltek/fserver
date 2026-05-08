@@ -26,10 +26,10 @@ public class JwtAuthFilter implements WebFilter {
         String token = extractToken(exchange);
         if (token != null && jwtUtil.isValid(token)) {
             Claims claims = jwtUtil.parse(token);
-            String role  = claims.get("role",  String.class);
-            String email = claims.get("email", String.class);
+            String role     = claims.get("role",     String.class);
+            String username = claims.get("username", String.class);
             var auth = new UsernamePasswordAuthenticationToken(
-                    email, null,
+                    username, null,
                     List.of(new SimpleGrantedAuthority("ROLE_" + role))
             );
             return chain.filter(exchange)

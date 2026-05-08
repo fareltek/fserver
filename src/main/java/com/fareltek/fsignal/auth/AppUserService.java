@@ -26,25 +26,23 @@ public class AppUserService {
         this.jwtUtil = jwtUtil;
     }
 
-    public Mono<AppUser> register(String fullName, String email, String rawPassword, String requestedRole) {
-        // MANAGER role cannot be self-assigned via registration
+    public Mono<AppUser> register(String fullName, String username, String rawPassword, String requestedRole) {
         String role = ("OPERATOR".equals(requestedRole)) ? "OPERATOR" : "GUEST";
-        return repo.findByEmail(email)
-                .flatMap(existing -> Mono.<AppUser>error(new IllegalArgumentException("Bu e-posta zaten kayıtlı.")))
+        return repo.findByUsername(username)
+                .flatMap(existing -> Mono.<AppUser>error(new IllegalArgumentException("Bu kullanıcı adı zaten kayıtlı.")))
                 .switchIfEmpty(
                     repo.count().flatMap(count -> {
-                        boolean isFirst    = (count == 0);
+                        boolean isFirst = (count == 0);
                         String effectiveRole = isFirst ? "MANAGER" : role;
-                        AppUser user = AppUser.create(fullName, email, encoder.encode(rawPassword), effectiveRole);
-                        // First user is immediately active; rest await admin approval
+                        AppUser user = AppUser.create(fullName, username, encoder.encode(rawPassword), effectiveRole);
                         user.setActive(isFirst);
                         return repo.save(user);
                     })
                 );
     }
 
-    public Mono<String> login(String email, String rawPassword) {
-        return repo.findByEmail(email)
+    public Mono<String> login(String username, String rawPassword) {
+        return repo.findByUsername(username)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Kullanıcı bulunamadı.")))
                 .flatMap(user -> {
                     if (!Boolean.TRUE.equals(user.getActive())) {
@@ -69,13 +67,13 @@ public class AppUserService {
                     user.setFailedAttempts(0);
                     user.setLockedUntil(null);
                     user.setLastLogin(OffsetDateTime.now());
-                    String token = jwtUtil.generate(user.getId(), user.getEmail(), user.getFullName(), user.getRole());
+                    String token = jwtUtil.generate(user.getId(), user.getUsername(), user.getFullName(), user.getRole());
                     return repo.save(user).thenReturn(token);
                 });
     }
 
-    public Mono<AppUser> findByEmail(String email) {
-        return repo.findByEmail(email);
+    public Mono<AppUser> findByUsername(String username) {
+        return repo.findByUsername(username);
     }
 
     public Mono<AppUser> findById(UUID id) {
@@ -101,13 +99,13 @@ public class AppUserService {
                 .flatMap(u -> { u.setRole(role); return repo.save(u); });
     }
 
-    public Mono<AppUser> create(String fullName, String email, String rawPassword, String role) {
+    public Mono<AppUser> create(String fullName, String username, String rawPassword, String role) {
         if (!VALID_ROLES.contains(role))
             return Mono.error(new IllegalArgumentException("Geçersiz rol: " + role));
-        return repo.findByEmail(email)
+        return repo.findByUsername(username)
                 .flatMap(existing -> Mono.<AppUser>error(new IllegalArgumentException("Bu kullanıcı adı zaten mevcut.")))
                 .switchIfEmpty(Mono.defer(() -> {
-                    AppUser u = AppUser.create(fullName, email, encoder.encode(rawPassword), role);
+                    AppUser u = AppUser.create(fullName, username, encoder.encode(rawPassword), role);
                     u.setActive(true);
                     return repo.save(u);
                 }));
@@ -117,7 +115,7 @@ public class AppUserService {
         return repo.findById(id)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Kullanıcı bulunamadı.")))
                 .flatMap(u -> {
-                    if ("fareltek".equals(u.getEmail()))
+                    if ("fareltek".equals(u.getUsername()))
                         return Mono.<Void>error(new IllegalArgumentException("Sistem yöneticisi silinemez."));
                     return repo.deleteById(id);
                 });

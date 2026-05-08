@@ -900,7 +900,7 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
       </div>
       <div>
         <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Kullanıcı Adı</label>
-        <input id="nu-email" type="text" class="inp" placeholder="kullanici_adi" autocomplete="off" style="width:140px">
+        <input id="nu-username" type="text" class="inp" placeholder="kullanici_adi" autocomplete="off" style="width:140px">
       </div>
       <div>
         <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Şifre</label>
@@ -981,7 +981,7 @@ function toggleTheme() {
 
 // ── AUTH ──────────────────────────────────────────────────────────────────
 let authToken   = sessionStorage.getItem('fsignal-token');
-let currentUser = null; // {id, fullName, email, role}
+let currentUser = null; // {id, fullName, username, role}
 
 function setToken(t) { authToken = t; sessionStorage.setItem('fsignal-token', t); }
 function clearToken()  { authToken = null; currentUser = null; sessionStorage.removeItem('fsignal-token'); }
@@ -1022,16 +1022,16 @@ function showAuthMsg(id, msg, isError) {
 }
 
 async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-pass').value;
-  if (!email || !pass) { showAuthMsg('login-msg', 'Kullanıcı adı ve şifre girin.', true); return; }
+  const username = document.getElementById('login-email').value.trim();
+  const pass     = document.getElementById('login-pass').value;
+  if (!username || !pass) { showAuthMsg('login-msg', 'Kullanıcı adı ve şifre girin.', true); return; }
   const btn = document.getElementById('login-btn');
   btn.disabled = true; btn.textContent = '⏳ Giriş yapılıyor...';
   try {
     const r = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: pass })
+      body: JSON.stringify({ username, password: pass })
     });
     if (!r.ok) {
       const err = await r.text();
@@ -2169,7 +2169,7 @@ function renderUsers(users) {
     </select>`;
     return `<tr>
       <td style="padding:8px 12px;font-size:12px;font-weight:600">${esc(u.fullName)}</td>
-      <td style="padding:8px 12px;font-size:11px;color:var(--blue)">${esc(u.email)}</td>
+      <td style="padding:8px 12px;font-size:11px;color:var(--blue)">${esc(u.username)}</td>
       <td style="padding:8px 12px">${roleBadge(u.role)}</td>
       <td style="padding:8px 12px">${activeBadge}</td>
       <td style="padding:8px 12px;font-size:10px;color:var(--muted)">${lastLogin}</td>
@@ -2182,7 +2182,7 @@ function renderUsers(users) {
     <table style="width:100%;border-collapse:collapse">
       <thead><tr style="background:var(--surface);border-bottom:1px solid var(--border)">
         <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Ad Soyad</th>
-        <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">E-Posta</th>
+        <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Kullanıcı Adı</th>
         <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Rol</th>
         <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Durum</th>
         <th style="padding:8px 12px;text-align:left;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Son Giriş</th>
@@ -2219,8 +2219,8 @@ function toggleAddUserForm() {
   const open  = panel.style.display === 'none';
   panel.style.display = open ? 'block' : 'none';
   if (open) {
-    document.getElementById('nu-name').value  = '';
-    document.getElementById('nu-email').value = '';
+    document.getElementById('nu-name').value     = '';
+    document.getElementById('nu-username').value = '';
     document.getElementById('nu-pass').value  = '';
     document.getElementById('nu-msg').textContent = '';
     document.getElementById('nu-name').focus();
@@ -2228,20 +2228,20 @@ function toggleAddUserForm() {
 }
 
 async function doAddUser() {
-  const name  = document.getElementById('nu-name').value.trim();
-  const email = document.getElementById('nu-email').value.trim();
-  const pass  = document.getElementById('nu-pass').value;
-  const role  = document.getElementById('nu-role').value;
-  const msg   = document.getElementById('nu-msg');
+  const name     = document.getElementById('nu-name').value.trim();
+  const username = document.getElementById('nu-username').value.trim();
+  const pass     = document.getElementById('nu-pass').value;
+  const role     = document.getElementById('nu-role').value;
+  const msg      = document.getElementById('nu-msg');
   msg.textContent = '';
-  if (!name)  { msg.style.color='var(--red)'; msg.textContent='Ad Soyad zorunlu.'; return; }
-  if (!email) { msg.style.color='var(--red)'; msg.textContent='Kullanıcı adı zorunlu.'; return; }
-  if (!pass)  { msg.style.color='var(--red)'; msg.textContent='Şifre zorunlu.'; return; }
+  if (!name)     { msg.style.color='var(--red)'; msg.textContent='Ad Soyad zorunlu.'; return; }
+  if (!username) { msg.style.color='var(--red)'; msg.textContent='Kullanıcı adı zorunlu.'; return; }
+  if (!pass)     { msg.style.color='var(--red)'; msg.textContent='Şifre zorunlu.'; return; }
   try {
     const r = await authFetch('/api/users', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({fullName:name, email, password:pass, role})
+      body: JSON.stringify({fullName:name, username, password:pass, role})
     });
     if (!r.ok) { const t = await r.text(); throw new Error(t); }
     msg.style.color = 'var(--green)';

@@ -15,7 +15,7 @@ public class AppUser implements Persistable<UUID> {
     @Transient private boolean isNew;
 
     private String fullName;
-    private String email;
+    private String username;
     private String passwordHash;
     private String role;
     private OffsetDateTime createdAt;
@@ -24,12 +24,12 @@ public class AppUser implements Persistable<UUID> {
     private OffsetDateTime lockedUntil;
     private Boolean active;
 
-    public static AppUser create(String fullName, String email, String passwordHash, String role) {
+    public static AppUser create(String fullName, String username, String passwordHash, String role) {
         AppUser u = new AppUser();
         u.id = UUID.randomUUID();
         u.isNew = true;
         u.fullName = fullName;
-        u.email = email;
+        u.username = username;
         u.passwordHash = passwordHash;
         u.role = role;
         u.createdAt = OffsetDateTime.now();
@@ -44,8 +44,8 @@ public class AppUser implements Persistable<UUID> {
 
     public String getFullName()                      { return fullName; }
     public void setFullName(String v)                { this.fullName = v; }
-    public String getEmail()                         { return email; }
-    public void setEmail(String v)                   { this.email = v; }
+    public String getUsername()                       { return username; }
+    public void setUsername(String v)                { this.username = v; }
     public String getPasswordHash()                  { return passwordHash; }
     public void setPasswordHash(String v)            { this.passwordHash = v; }
     public String getRole()                          { return role; }

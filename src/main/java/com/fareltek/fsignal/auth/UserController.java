@@ -28,11 +28,11 @@ public class UserController {
     @GetMapping
     public Mono<List<Map<String, Object>>> list() {
         return userService.findAll()
-                .filter(u -> !"fareltek".equals(u.getEmail()))
+                .filter(u -> !"fareltek".equals(u.getUsername()))
                 .map(u -> Map.<String, Object>of(
                         "id",        u.getId().toString(),
                         "fullName",  u.getFullName(),
-                        "email",     u.getEmail(),
+                        "username",  u.getUsername(),
                         "role",      u.getRole(),
                         "active",    Boolean.TRUE.equals(u.getActive()),
                         "createdAt", u.getCreatedAt() != null ? u.getCreatedAt().toString() : "",
@@ -43,14 +43,14 @@ public class UserController {
     @PostMapping
     public Mono<Map<String, Object>> createUser(@RequestBody CreateUserRequest req, Authentication auth) {
         String actor = actorName(auth);
-        return userService.create(req.fullName(), req.email(), req.password(), req.role())
+        return userService.create(req.fullName(), req.username(), req.password(), req.role())
                 .flatMap(u -> eventService.saveSystemEvent(SYSTEM_SOURCE, "INFO",
-                        "Kullanıcı oluşturuldu: " + u.getFullName() + " (" + u.getEmail() + ")"
+                        "Kullanıcı oluşturuldu: " + u.getFullName() + " (" + u.getUsername() + ")"
                         + " Rol: " + u.getRole() + " | İşlem: " + actor)
                         .thenReturn(Map.<String, Object>of(
                                 "id",       u.getId().toString(),
                                 "fullName", u.getFullName(),
-                                "email",    u.getEmail(),
+                                "username", u.getUsername(),
                                 "role",     u.getRole(),
                                 "active",   Boolean.TRUE.equals(u.getActive()))))
                 .onErrorMap(IllegalArgumentException.class,
@@ -63,7 +63,7 @@ public class UserController {
         return userService.findById(id)
                 .flatMap(u -> userService.delete(id)
                         .then(eventService.saveSystemEvent(SYSTEM_SOURCE, "WARNING",
-                                "Kullanıcı silindi: " + u.getFullName() + " (" + u.getEmail() + ")"
+                                "Kullanıcı silindi: " + u.getFullName() + " (" + u.getUsername() + ")"
                                 + " | İşlem: " + actor)))
                 .then()
                 .onErrorMap(IllegalArgumentException.class,
@@ -75,7 +75,7 @@ public class UserController {
         String actor = actorName(auth);
         return userService.setActive(id, true)
                 .flatMap(u -> eventService.saveSystemEvent(SYSTEM_SOURCE, "INFO",
-                        "Kullanıcı aktifleştirildi: " + u.getFullName() + " (" + u.getEmail() + ")"
+                        "Kullanıcı aktifleştirildi: " + u.getFullName() + " (" + u.getUsername() + ")"
                         + " | İşlem: " + actor)
                         .thenReturn(Map.<String, Object>of("id", u.getId().toString(), "active", true)))
                 .onErrorMap(IllegalArgumentException.class,
@@ -87,7 +87,7 @@ public class UserController {
         String actor = actorName(auth);
         return userService.setActive(id, false)
                 .flatMap(u -> eventService.saveSystemEvent(SYSTEM_SOURCE, "WARNING",
-                        "Kullanıcı devre dışı bırakıldı: " + u.getFullName() + " (" + u.getEmail() + ")"
+                        "Kullanıcı devre dışı bırakıldı: " + u.getFullName() + " (" + u.getUsername() + ")"
                         + " | İşlem: " + actor)
                         .thenReturn(Map.<String, Object>of("id", u.getId().toString(), "active", false)))
                 .onErrorMap(IllegalArgumentException.class,
@@ -100,7 +100,7 @@ public class UserController {
         return userService.findById(id)
                 .flatMap(before -> userService.setRole(id, req.role())
                         .flatMap(u -> eventService.saveSystemEvent(SYSTEM_SOURCE, "INFO",
-                                "Rol değiştirildi: " + u.getFullName() + " (" + u.getEmail() + ")"
+                                "Rol değiştirildi: " + u.getFullName() + " (" + u.getUsername() + ")"
                                 + " " + before.getRole() + " → " + u.getRole() + " | İşlem: " + actor)
                                 .thenReturn(Map.<String, Object>of("id", u.getId().toString(), "role", u.getRole()))))
                 .onErrorMap(IllegalArgumentException.class,
@@ -111,6 +111,6 @@ public class UserController {
         return auth != null ? auth.getName() : "system";
     }
 
-    public record CreateUserRequest(String fullName, String email, String password, String role) {}
+    public record CreateUserRequest(String fullName, String username, String password, String role) {}
     public record RoleRequest(String role) {}
 }

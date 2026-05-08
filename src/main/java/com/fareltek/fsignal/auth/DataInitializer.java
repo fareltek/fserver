@@ -22,11 +22,11 @@ public class DataInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        repo.findByEmail("fareltek")
+        repo.findByUsername("fareltek")
             .switchIfEmpty(
                 repo.save(AppUser.create("Admin", "fareltek", encoder.encode("2580"), "MANAGER"))
-                    .doOnSuccess(u -> log.info("[AUTH] Admin hesabi olusturuldu: {}", u.getEmail()))
+                    .doOnSuccess(u -> log.info("[AUTH] Admin hesabi olusturuldu: {}", u.getUsername()))
             )
-            .subscribe(u -> log.info("[AUTH] Admin hesabi mevcut: {}", u.getEmail()));
+            .subscribe(u -> log.info("[AUTH] Admin hesabi mevcut: {}", u.getUsername()));
     }
 }

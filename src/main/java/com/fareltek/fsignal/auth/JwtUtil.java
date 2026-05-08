@@ -25,10 +25,10 @@ public class JwtUtil {
         this.expiryMs  = expiryHours * 3_600_000L;
     }
 
-    public String generate(UUID userId, String email, String fullName, String role) {
+    public String generate(UUID userId, String username, String fullName, String role) {
         return Jwts.builder()
                 .subject(userId.toString())
-                .claim("email",    email)
+                .claim("username", username)
                 .claim("name",     fullName)
                 .claim("role",     role)
                 .issuedAt(new Date())
