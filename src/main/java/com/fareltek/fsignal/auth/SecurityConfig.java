@@ -37,6 +37,8 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.PUT, "/api/sections/**").hasRole("MANAGER")
                         .pathMatchers(HttpMethod.DELETE, "/api/sections/**").hasRole("MANAGER")
                         .pathMatchers("/api/users", "/api/users/**").hasRole("MANAGER")
+                        .pathMatchers(HttpMethod.PUT, "/api/config/**").hasRole("MANAGER")
+                        .pathMatchers(HttpMethod.GET, "/api/config").hasRole("MANAGER")
                         // OPERATOR or MANAGER
                         .pathMatchers(HttpMethod.POST, "/api/events/**").hasAnyRole("OPERATOR", "MANAGER")
                         // Any authenticated user (GUEST, OPERATOR, MANAGER)

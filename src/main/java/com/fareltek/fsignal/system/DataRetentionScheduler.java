@@ -5,9 +5,7 @@ import com.fareltek.fsignal.db.SafetyEventService;
 import io.r2dbc.spi.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.r2dbc.core.DatabaseClient;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -27,20 +25,20 @@ public class DataRetentionScheduler {
 
     private final SafetyEventService eventService;
     private final DatabaseClient     dbClient;
+    private final SystemConfigService configService;
 
-    @Value("${fsignal.archive.path:./archive}")
-    private String archivePath;
-
-    @Value("${fsignal.retention.days:730}")
-    private int retentionDays;
-
-    public DataRetentionScheduler(SafetyEventService eventService, ConnectionFactory connectionFactory) {
-        this.eventService = eventService;
-        this.dbClient     = DatabaseClient.create(connectionFactory);
+    public DataRetentionScheduler(SafetyEventService eventService,
+                                  ConnectionFactory connectionFactory,
+                                  SystemConfigService configService) {
+        this.eventService  = eventService;
+        this.dbClient      = DatabaseClient.create(connectionFactory);
+        this.configService = configService;
     }
 
-    @Scheduled(cron = "0 0 2 * * *") // every day at 02:00
+    /** Called by ScheduledTaskManager — schedule configured via system_config (retention.run-hour/minute). */
     public void runRetention() {
+        int    retentionDays = (int) configService.getLong("retention.days", 730L);
+        String archivePath   = configService.getSync("archive.path", "./archive");
         OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(retentionDays);
         log.info("[RETENTION] Başlıyor — {} günden eski olaylar arşivleniyor (cutoff={})", retentionDays, cutoff);
 
@@ -51,7 +49,7 @@ public class DataRetentionScheduler {
                         return eventService.saveSystemEvent("SYSTEM", "INFO",
                                 "Veri saklama kontrolü: arşivlenecek olay yok (cutoff=" + cutoff.toLocalDate() + ")");
                     }
-                    return archiveToCsv(events, cutoff)
+                    return archiveToCsv(events, cutoff, archivePath)
                             .flatMap(csvPath -> bulkDelete(cutoff)
                                     .flatMap(deleted -> eventService.saveSystemEvent("SYSTEM", "INFO",
                                             "Veri arşivlendi: " + deleted + " olay silindi"
@@ -66,7 +64,7 @@ public class DataRetentionScheduler {
                 .subscribe();
     }
 
-    private Mono<String> archiveToCsv(List<SafetyEvent> events, OffsetDateTime cutoff) {
+    private Mono<String> archiveToCsv(List<SafetyEvent> events, OffsetDateTime cutoff, String archivePath) {
         return Mono.fromCallable(() -> {
             Path dir = Paths.get(archivePath).resolve("retention");
             Files.createDirectories(dir);

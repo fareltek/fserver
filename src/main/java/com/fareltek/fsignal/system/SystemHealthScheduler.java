@@ -3,10 +3,11 @@ package com.fareltek.fsignal.system;
 import com.fareltek.fsignal.db.SafetyEventService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
@@ -22,22 +23,23 @@ public class SystemHealthScheduler {
     private static final long   MB  = 1024L * 1024;
 
     private final SafetyEventService eventService;
+    private final SystemConfigService configService;
 
-    @Value("${fsignal.archive.path:./archive}")
-    private String archivePath;
-
-    public SystemHealthScheduler(SafetyEventService eventService) {
-        this.eventService = eventService;
+    public SystemHealthScheduler(SafetyEventService eventService, SystemConfigService configService) {
+        this.eventService  = eventService;
+        this.configService = configService;
     }
 
-    /** Every 30 minutes: record system time + disk + memory. */
-    @Scheduled(fixedRate = 1_800_000)
-    public void healthAndTimeCheck() {
-        String time   = OffsetDateTime.now(ZoneOffset.UTC).toString();
-        String uptime = formatUptime(ManagementFactory.getRuntimeMXBean().getUptime());
-        String disk   = diskInfo();
-        String mem    = memInfo();
-        String diskSeverity = diskUsagePct() > 85 ? "WARNING" : "INFO";
+    /** Called by ScheduledTaskManager — interval configured via system_config. */
+    public void healthCheck() {
+        String archivePath  = configService.getSync("archive.path", "./archive");
+        int    diskWarnPct  = (int) configService.getLong("health.disk-warn-pct", 85L);
+
+        String time         = OffsetDateTime.now(ZoneOffset.UTC).toString();
+        String uptime       = formatUptime(ManagementFactory.getRuntimeMXBean().getUptime());
+        String disk         = diskInfo(archivePath);
+        String mem          = memInfo();
+        String diskSeverity = diskUsagePct(archivePath) > diskWarnPct ? "WARNING" : "INFO";
 
         String msg = "Sistem durumu | Saat: " + time
                 + " | Uptime: " + uptime
@@ -49,47 +51,65 @@ public class SystemHealthScheduler {
                 .subscribe();
     }
 
-    /** Every 6 hours: explicit NTP/time reference snapshot. */
-    @Scheduled(fixedRate = 21_600_000)
-    public void ntpSnapshot() {
-        String utc = OffsetDateTime.now(ZoneOffset.UTC).toString();
-        long   jvmMs = ManagementFactory.getRuntimeMXBean().getUptime();
-        eventService.saveSystemEvent("SYSTEM", "INFO",
-                "NTP zaman referansı | UTC: " + utc + " | JVM uptime: " + formatUptime(jvmMs))
-                .subscribe();
+    /** Called by ScheduledTaskManager — interval configured via system_config. */
+    public void ntpCheck() {
+        String server    = configService.getSync("ntp.server", "pool.ntp.org");
+        int    timeoutMs = (int) configService.getLong("ntp.timeout-ms", 4000L);
+        long   threshold = configService.getLong("ntp.warn-threshold-ms", 1000L);
+
+        Mono.fromCallable(() -> NtpClient.query(server, timeoutMs))
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe(
+                    result -> {
+                        String severity = result.isDrifted(threshold) ? "WARNING" : "INFO";
+                        String msg = "NTP zaman kontrolü | " + result.summary()
+                                + " | Yerel UTC: " + OffsetDateTime.now(ZoneOffset.UTC)
+                                + (result.isDrifted(threshold)
+                                    ? " | ⚠ SAAT KAYMASI EŞİK AŞILDI (>" + threshold + "ms)"
+                                    : "");
+                        log.info("[NTP] {}", msg);
+                        eventService.saveSystemEvent("SYSTEM", severity, msg).subscribe();
+                    },
+                    error -> {
+                        String msg = "NTP sorgu hatası | Sunucu: " + server
+                                + " | Hata: " + error.getMessage()
+                                + " | Yerel UTC: " + OffsetDateTime.now(ZoneOffset.UTC);
+                        log.warn("[NTP] {}", msg);
+                        eventService.saveSystemEvent("SYSTEM", "WARNING", msg).subscribe();
+                    }
+                );
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
-    private String diskInfo() {
+    private String diskInfo(String archivePath) {
         try {
-            FileStore fs = Files.getFileStore(Paths.get(archivePath).toAbsolutePath());
-            long total = fs.getTotalSpace();
-            long free  = fs.getUsableSpace();
-            long used  = total - free;
-            int  pct   = total > 0 ? (int) (used * 100L / total) : 0;
-            return String.format("Disk: %d/%d GB (%%%d)",
-                    used / GB, total / GB, pct);
-        } catch (Exception e) {
+            FileStore fs    = Files.getFileStore(Paths.get(archivePath).toAbsolutePath());
+            long total      = fs.getTotalSpace();
+            long free       = fs.getUsableSpace();
+            long used       = total - free;
+            int  pct        = total > 0 ? (int) (used * 100L / total) : 0;
+            return String.format("Disk: %d/%d GB (%%%d)", used / GB, total / GB, pct);
+        } catch (IOException e) {
             return "Disk: bilinmiyor";
         }
     }
 
-    private int diskUsagePct() {
+    private int diskUsagePct(String archivePath) {
         try {
             FileStore fs = Files.getFileStore(Paths.get(archivePath).toAbsolutePath());
-            long total = fs.getTotalSpace();
+            long total   = fs.getTotalSpace();
             if (total == 0) return 0;
             return (int) ((total - fs.getUsableSpace()) * 100L / total);
-        } catch (Exception e) {
+        } catch (IOException e) {
             return 0;
         }
     }
 
     private String memInfo() {
-        Runtime rt  = Runtime.getRuntime();
-        long used   = (rt.totalMemory() - rt.freeMemory()) / MB;
-        long max    = rt.maxMemory() / MB;
+        Runtime rt = Runtime.getRuntime();
+        long used  = (rt.totalMemory() - rt.freeMemory()) / MB;
+        long max   = rt.maxMemory() / MB;
         return String.format("Bellek: %d/%d MB", used, max);
     }
 

@@ -417,6 +417,27 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 .role-operator { background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue); }
 .role-guest    { background:var(--elevated); color:var(--muted); border:1px solid var(--border); }
 
+/* ── SETTINGS TAB ────────────────────────────────────────────────────────── */
+.settings-body { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; }
+.settings-body::-webkit-scrollbar { width:5px; }
+.settings-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+.cfg-group { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.cfg-group-title { padding:9px 16px; background:var(--elevated); border-bottom:1px solid var(--border);
+                   font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); }
+.cfg-row { display:flex; align-items:flex-start; gap:12px; padding:11px 16px;
+           border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.cfg-row:last-child { border-bottom:none; }
+.cfg-desc { flex:1; min-width:180px; }
+.cfg-desc-key  { font-size:11px; font-weight:600; color:var(--text); }
+.cfg-desc-text { font-size:10px; color:var(--muted); margin-top:2px; line-height:1.4; }
+.cfg-input-wrap { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cfg-input { width:200px; }
+.badge-restart { font-size:9px; padding:2px 6px; border-radius:4px;
+                 background:var(--yellow-bg); color:var(--yellow); border:1px solid var(--yellow); white-space:nowrap; }
+.badge-live    { font-size:9px; padding:2px 6px; border-radius:4px;
+                 background:var(--green-bg); color:var(--green); border:1px solid var(--green); white-space:nowrap; }
+.cfg-feedback  { font-size:10px; margin-top:4px; }
+
 /* ── LIVE LOG TAB ─────────────────────────────────────────────────────────── */
 .ll-wrap  { flex:1; overflow-y:auto; background:var(--bg); }
 .ll-wrap::-webkit-scrollbar { width:5px; }
@@ -533,7 +554,8 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   <div class="tab"        id="tab-report"   onclick="switchTab('report')">📊 Raporlama</div>
   <div class="tab"        id="tab-archive"  onclick="switchTab('archive')">📁 Arşiv</div>
   <div class="tab"        id="tab-livelog"  onclick="switchTab('livelog')" style="display:none">📟 Canlı Log</div>
-  <div class="tab"        id="tab-users"    onclick="switchTab('users')"   style="display:none">👥 Kullanıcılar</div>
+  <div class="tab"        id="tab-users"    onclick="switchTab('users')"    style="display:none">👥 Kullanıcılar</div>
+  <div class="tab"        id="tab-settings" onclick="switchTab('settings')" style="display:none">⚙ Ayarlar</div>
 </div>
 
 <!-- ══════════════════════════════ MONITOR ══════════════════════════════════ -->
@@ -783,6 +805,17 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   </div>
 </div>
 
+<!-- ══════════════════════════ SETTINGS ════════════════════════════════════ -->
+<div class="view" id="view-settings">
+  <div class="sec-toolbar">
+    <span class="sec-toolbar-title">Sistem Ayarları</span>
+    <button class="btn" onclick="loadSettings()">↻ Yenile</button>
+  </div>
+  <div class="settings-body" id="cfg-body">
+    <div class="rpt-loading"><span class="spinner">⏳</span> Yükleniyor...</div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -887,6 +920,7 @@ function applyRoleUI(role) {
   document.getElementById('tab-sections').style.display = canManage ? '' : 'none';
   document.getElementById('tab-livelog').style.display  = canManage ? '' : 'none';
   document.getElementById('tab-users').style.display    = canManage ? '' : 'none';
+  document.getElementById('tab-settings').style.display = canManage ? '' : 'none';
 
   // Acknowledge-all button → MANAGER only
   const ackAllBtn = document.getElementById('btn-ack-all');
@@ -966,6 +1000,7 @@ function switchTab(name) {
   if (name==='archive')  loadArchive();
   if (name==='livelog')  startLiveLog();
   if (name==='users')    loadUsers();
+  if (name==='settings') loadSettings();
 }
 
 // ── SSE ───────────────────────────────────────────────────────────────────
@@ -2090,6 +2125,100 @@ setInterval(refreshGlobalStats, 30000);
     showAuthOverlay();
   }
 })();
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────
+const CFG_GROUP_LABELS = {
+  ntp:       'NTP Zaman Senkronizasyonu',
+  security:  'Güvenlik',
+  retention: 'Veri Saklama & Arşivleme',
+  health:    'Sistem Sağlığı & Zamanlayıcılar'
+};
+const CFG_LIVE_KEYS = new Set([
+  'ntp.server','ntp.timeout-ms','ntp.warn-threshold-ms',
+  'retention.days','retention.run-hour','retention.run-minute',
+  'security.max-login-attempts','security.login-window-ms',
+  'health.disk-warn-pct','health.check-interval-ms','health.ntp-check-interval-ms'
+]);
+const CFG_SCHED_KEYS = new Set([
+  'health.check-interval-ms','health.ntp-check-interval-ms',
+  'retention.run-hour','retention.run-minute'
+]);
+
+async function loadSettings() {
+  const body = document.getElementById('cfg-body');
+  body.innerHTML = '<div class="rpt-loading"><span class="spinner">⏳</span> Yükleniyor...</div>';
+  try {
+    const r = await authFetch('/api/config');
+    if (!r.ok) throw new Error(await r.text());
+    renderSettings(await r.json());
+  } catch(e) {
+    body.innerHTML = `<div style="padding:20px;color:var(--red)">${esc(e.message)}</div>`;
+  }
+}
+
+function renderSettings(configs) {
+  const groups = {};
+  for (const c of configs) {
+    (groups[c.group] = groups[c.group] || []).push(c);
+  }
+  const order = ['ntp','security','retention','health'];
+  let html = '';
+  for (const g of order) {
+    if (!groups[g]) continue;
+    html += `<div class="cfg-group"><div class="cfg-group-title">${CFG_GROUP_LABELS[g]||g}</div>`;
+    for (const c of groups[g]) {
+      const badge = c.requiresRestart
+        ? '<span class="badge-restart">Yeniden başlatma gerektirir</span>'
+        : '<span class="badge-live">' + (CFG_SCHED_KEYS.has(c.key) ? 'Anlık yeniden planlanır' : 'Anlık uygulanır') + '</span>';
+      const updInfo = c.updatedBy
+        ? `<br><span style="font-size:9px;color:var(--subtle)">Son: ${esc(c.updatedBy)} · ${c.updatedAt?c.updatedAt.substring(0,16):''}</span>`
+        : '';
+      const cid = cfgId(c.key);
+      html += `<div class="cfg-row">
+  <div class="cfg-desc">
+    <div class="cfg-desc-key">${esc(c.key)}</div>
+    <div class="cfg-desc-text">${esc(c.description)}${updInfo}</div>
+  </div>
+  <div class="cfg-input-wrap">
+    <input type="text" class="inp cfg-input" id="ci-${cid}" value="${esc(c.value)}">
+    ${badge}
+    <button class="btn sm success" onclick="saveConfig('${esc(c.key)}')">Kaydet</button>
+  </div>
+  <div class="cfg-feedback" id="cf-${cid}" style="display:none;width:100%"></div>
+</div>`;
+    }
+    html += '</div>';
+  }
+  document.getElementById('cfg-body').innerHTML = html;
+}
+
+function cfgId(key) { return key.replace(/\./g,'-'); }
+
+async function saveConfig(key) {
+  const cid   = cfgId(key);
+  const value = document.getElementById('ci-' + cid).value.trim();
+  const fb    = document.getElementById('cf-' + cid);
+  fb.style.display = '';
+  fb.style.color = 'var(--muted)';
+  fb.textContent = 'Kaydediliyor...';
+  try {
+    const r = await authFetch('/api/config/' + encodeURIComponent(key), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const cfg = await r.json();
+    fb.style.color = 'var(--green)';
+    fb.textContent = CFG_SCHED_KEYS.has(key) ? 'Kaydedildi — zamanlayıcı yeniden planlandı.' : 'Kaydedildi.';
+    // Refresh the description line with updated audit info
+    loadSettings();
+    setTimeout(() => { fb.style.display = 'none'; }, 3500);
+  } catch(e) {
+    fb.style.color = 'var(--red)';
+    fb.textContent = 'Hata: ' + e.message;
+  }
+}
 </script>
 </body>
 </html>
