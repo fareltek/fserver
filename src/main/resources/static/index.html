@@ -418,25 +418,33 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 .role-guest    { background:var(--elevated); color:var(--muted); border:1px solid var(--border); }
 
 /* ── SETTINGS TAB ────────────────────────────────────────────────────────── */
-.settings-body { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; }
+.settings-body { flex:1; overflow-y:auto; padding:24px 28px; display:flex; flex-direction:column; gap:22px; background:var(--bg); }
 .settings-body::-webkit-scrollbar { width:5px; }
 .settings-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-.cfg-group { background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-.cfg-group-title { padding:9px 16px; background:var(--elevated); border-bottom:1px solid var(--border);
-                   font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); }
-.cfg-row { display:flex; align-items:flex-start; gap:12px; padding:11px 16px;
-           border-bottom:1px solid var(--border); flex-wrap:wrap; }
-.cfg-row:last-child { border-bottom:none; }
-.cfg-desc { flex:1; min-width:180px; }
-.cfg-desc-key  { font-size:11px; font-weight:600; color:var(--text); }
-.cfg-desc-text { font-size:10px; color:var(--muted); margin-top:2px; line-height:1.4; }
-.cfg-input-wrap { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.cfg-input { width:200px; }
-.badge-restart { font-size:9px; padding:2px 6px; border-radius:4px;
-                 background:var(--yellow-bg); color:var(--yellow); border:1px solid var(--yellow); white-space:nowrap; }
-.badge-live    { font-size:9px; padding:2px 6px; border-radius:4px;
-                 background:var(--green-bg); color:var(--green); border:1px solid var(--green); white-space:nowrap; }
-.cfg-feedback  { font-size:10px; margin-top:4px; }
+.cfg-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.cfg-card-hdr { display:flex; align-items:center; gap:10px; padding:13px 20px;
+                background:var(--elevated); border-bottom:1px solid var(--border); }
+.cfg-card-hdr-icon { font-size:15px; }
+.cfg-card-hdr-title { font-size:13px; font-weight:700; color:var(--text); }
+.cfg-card-hdr-sub { font-size:10px; color:var(--muted); margin-left:auto; }
+.cfg-item { display:grid; grid-template-columns:1fr 300px; align-items:center; gap:20px;
+            padding:15px 20px; border-bottom:1px solid var(--border); }
+.cfg-item:last-child { border-bottom:none; }
+.cfg-item:hover { background:rgba(255,255,255,.015); }
+.cfg-item-name { font-size:12px; font-weight:600; color:var(--text); margin-bottom:3px; }
+.cfg-item-desc { font-size:10px; color:var(--muted); line-height:1.55; margin-bottom:5px; }
+.cfg-item-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cfg-tag { font-size:9px; padding:1px 7px; border-radius:3px; font-weight:600; white-space:nowrap; }
+.cfg-tag-restart { background:var(--yellow-bg); color:var(--yellow); border:1px solid var(--yellow); }
+.cfg-tag-sched   { background:var(--blue-bg);   color:var(--blue);   border:1px solid var(--blue);   }
+.cfg-tag-live    { background:var(--green-bg);  color:var(--green);  border:1px solid var(--green);  }
+.cfg-audit       { font-size:9px; color:var(--subtle); }
+.cfg-ctrl { display:flex; flex-direction:column; gap:5px; align-items:flex-end; }
+.cfg-ctrl-row { display:flex; align-items:center; gap:6px; }
+.cfg-ctrl-inp { width:160px; }
+.cfg-ctrl-unit { font-size:10px; color:var(--muted); min-width:28px; }
+.cfg-ms-hint { font-size:9px; color:var(--blue); text-align:right; min-height:13px; }
+.cfg-feedback { font-size:10px; text-align:right; min-height:14px; transition:color .2s; }
 
 /* ── LIVE LOG TAB ─────────────────────────────────────────────────────────── */
 .ll-wrap  { flex:1; overflow-y:auto; background:var(--bg); }
@@ -2127,22 +2135,47 @@ setInterval(refreshGlobalStats, 30000);
 })();
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────
-const CFG_GROUP_LABELS = {
-  ntp:       'NTP Zaman Senkronizasyonu',
-  security:  'Güvenlik',
-  retention: 'Veri Saklama & Arşivleme',
-  health:    'Sistem Sağlığı & Zamanlayıcılar'
+const CFG_META = {
+  'ntp.server':                  { label:'NTP Sunucusu',              unit:'',        type:'text',   icon:'📡' },
+  'ntp.timeout-ms':              { label:'Bağlantı Zaman Aşımı',      unit:'ms',      type:'number', icon:''   },
+  'ntp.warn-threshold-ms':       { label:'Saat Kayması Uyarı Eşiği',  unit:'ms',      type:'number', icon:''   },
+  'security.max-login-attempts': { label:'Maks. Giriş Denemesi',      unit:'deneme/dk',type:'number',icon:''   },
+  'security.login-window-ms':    { label:'Sayım Penceresi',            unit:'ms',      type:'number', icon:''   },
+  'security.jwt-expiry-hours':   { label:'Oturum Süresi',              unit:'saat',    type:'number', icon:''   },
+  'retention.days':              { label:'Kayıt Saklama Süresi',       unit:'gün',     type:'number', icon:''   },
+  'archive.path':                { label:'Arşiv Dizini',               unit:'',        type:'text',   icon:''   },
+  'retention.run-hour':          { label:'Arşivleme Saati (UTC)',       unit:'(0–23)',  type:'number', icon:''   },
+  'retention.run-minute':        { label:'Arşivleme Dakikası',          unit:'(0–59)',  type:'number', icon:''   },
+  'health.disk-warn-pct':        { label:'Disk Doluluk Uyarı Eşiği',   unit:'%',       type:'number', icon:''   },
+  'health.check-interval-ms':    { label:'Sağlık Kontrolü Aralığı',    unit:'ms',      type:'number', icon:''   },
+  'health.ntp-check-interval-ms':{ label:'NTP Kontrolü Aralığı',       unit:'ms',      type:'number', icon:''   },
 };
-const CFG_LIVE_KEYS = new Set([
-  'ntp.server','ntp.timeout-ms','ntp.warn-threshold-ms',
-  'retention.days','retention.run-hour','retention.run-minute',
-  'security.max-login-attempts','security.login-window-ms',
-  'health.disk-warn-pct','health.check-interval-ms','health.ntp-check-interval-ms'
-]);
+const CFG_GROUPS = {
+  ntp:       { title:'NTP Zaman Senkronizasyonu',   icon:'📡', sub:'pool.ntp.org veya özel NTP sunucusu' },
+  security:  { title:'Güvenlik',                    icon:'🔒', sub:'Giriş koruması ve oturum yönetimi'   },
+  retention: { title:'Veri Saklama ve Arşivleme',   icon:'🗄', sub:'Otomatik temizleme ve CSV arşivi'    },
+  health:    { title:'Sistem Sağlığı ve Zamanlayıcılar', icon:'💊', sub:'Periyodik kontrol aralıkları'  },
+};
 const CFG_SCHED_KEYS = new Set([
   'health.check-interval-ms','health.ntp-check-interval-ms',
   'retention.run-hour','retention.run-minute'
 ]);
+const CFG_MS_KEYS = new Set([
+  'ntp.timeout-ms','ntp.warn-threshold-ms',
+  'security.login-window-ms',
+  'health.check-interval-ms','health.ntp-check-interval-ms'
+]);
+
+function msToHuman(v) {
+  const ms = parseInt(v);
+  if (!ms || isNaN(ms) || ms <= 0) return '';
+  if (ms < 1000)      return '= ' + ms + ' ms';
+  if (ms < 60000)     return '= ' + (ms/1000).toFixed(0) + ' saniye';
+  if (ms < 3600000)   return '= ' + (ms/60000).toFixed(0) + ' dakika';
+  return '= ' + (ms/3600000).toFixed(1).replace('.0','') + ' saat';
+}
+
+function cfgId(key) { return key.replace(/\./g,'-'); }
 
 async function loadSettings() {
   const body = document.getElementById('cfg-body');
@@ -2158,33 +2191,56 @@ async function loadSettings() {
 
 function renderSettings(configs) {
   const groups = {};
-  for (const c of configs) {
-    (groups[c.group] = groups[c.group] || []).push(c);
-  }
-  const order = ['ntp','security','retention','health'];
+  for (const c of configs) (groups[c.group] = groups[c.group] || []).push(c);
+
   let html = '';
-  for (const g of order) {
-    if (!groups[g]) continue;
-    html += `<div class="cfg-group"><div class="cfg-group-title">${CFG_GROUP_LABELS[g]||g}</div>`;
-    for (const c of groups[g]) {
-      const badge = c.requiresRestart
-        ? '<span class="badge-restart">Yeniden başlatma gerektirir</span>'
-        : '<span class="badge-live">' + (CFG_SCHED_KEYS.has(c.key) ? 'Anlık yeniden planlanır' : 'Anlık uygulanır') + '</span>';
-      const updInfo = c.updatedBy
-        ? `<br><span style="font-size:9px;color:var(--subtle)">Son: ${esc(c.updatedBy)} · ${c.updatedAt?c.updatedAt.substring(0,16):''}</span>`
-        : '';
+  for (const gkey of ['ntp','security','retention','health']) {
+    if (!groups[gkey]) continue;
+    const g = CFG_GROUPS[gkey] || { title: gkey, icon: '', sub: '' };
+    html += `<div class="cfg-card">
+  <div class="cfg-card-hdr">
+    <span class="cfg-card-hdr-icon">${g.icon}</span>
+    <span class="cfg-card-hdr-title">${g.title}</span>
+    <span class="cfg-card-hdr-sub">${g.sub}</span>
+  </div>`;
+    for (const c of groups[gkey]) {
+      const m   = CFG_META[c.key] || { label: c.key, unit: '', type: 'text' };
       const cid = cfgId(c.key);
-      html += `<div class="cfg-row">
-  <div class="cfg-desc">
-    <div class="cfg-desc-key">${esc(c.key)}</div>
-    <div class="cfg-desc-text">${esc(c.description)}${updInfo}</div>
+      const isMsKey = CFG_MS_KEYS.has(c.key);
+      const inputType = m.type === 'number' ? 'number' : 'text';
+      const inputExtra = isMsKey ? `oninput="updateMsHint('${cid}',this.value)"` : '';
+
+      // Tags
+      let tags = '';
+      if (c.requiresRestart) {
+        tags += '<span class="cfg-tag cfg-tag-restart">↺ Yeniden başlatma gerektirir</span>';
+      } else if (CFG_SCHED_KEYS.has(c.key)) {
+        tags += '<span class="cfg-tag cfg-tag-sched">⟳ Zamanlayıcı anlık güncellenir</span>';
+      } else {
+        tags += '<span class="cfg-tag cfg-tag-live">● Anlık uygulanır</span>';
+      }
+
+      // Audit
+      const audit = c.updatedAt
+        ? `<span class="cfg-audit">Son değişiklik: ${esc(c.updatedBy || 'system')} &nbsp;·&nbsp; ${c.updatedAt.substring(0,16).replace('T',' ')}</span>`
+        : '';
+
+      html += `<div class="cfg-item">
+  <div>
+    <div class="cfg-item-name">${esc(m.label)}</div>
+    <div class="cfg-item-desc">${esc(c.description)}</div>
+    <div class="cfg-item-meta">${tags}${audit}</div>
   </div>
-  <div class="cfg-input-wrap">
-    <input type="text" class="inp cfg-input" id="ci-${cid}" value="${esc(c.value)}">
-    ${badge}
-    <button class="btn sm success" onclick="saveConfig('${esc(c.key)}')">Kaydet</button>
+  <div class="cfg-ctrl">
+    <div class="cfg-ctrl-row">
+      <input ${inputType==='number'?'type="number" min="0"':'type="text"'} class="inp cfg-ctrl-inp"
+             id="ci-${cid}" value="${esc(c.value)}" ${inputExtra}>
+      ${m.unit ? `<span class="cfg-ctrl-unit">${m.unit}</span>` : ''}
+      <button class="btn sm success" onclick="saveConfig('${esc(c.key)}')">Kaydet</button>
+    </div>
+    ${isMsKey ? `<div class="cfg-ms-hint" id="msh-${cid}">${msToHuman(c.value)}</div>` : ''}
+    <div class="cfg-feedback" id="cf-${cid}"></div>
   </div>
-  <div class="cfg-feedback" id="cf-${cid}" style="display:none;width:100%"></div>
 </div>`;
     }
     html += '</div>';
@@ -2192,13 +2248,15 @@ function renderSettings(configs) {
   document.getElementById('cfg-body').innerHTML = html;
 }
 
-function cfgId(key) { return key.replace(/\./g,'-'); }
+function updateMsHint(cid, val) {
+  const el = document.getElementById('msh-' + cid);
+  if (el) el.textContent = msToHuman(val);
+}
 
 async function saveConfig(key) {
   const cid   = cfgId(key);
   const value = document.getElementById('ci-' + cid).value.trim();
   const fb    = document.getElementById('cf-' + cid);
-  fb.style.display = '';
   fb.style.color = 'var(--muted)';
   fb.textContent = 'Kaydediliyor...';
   try {
@@ -2207,13 +2265,16 @@ async function saveConfig(key) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value })
     });
-    if (!r.ok) throw new Error(await r.text());
+    if (!r.ok) { const t = await r.text(); throw new Error(t); }
     const cfg = await r.json();
     fb.style.color = 'var(--green)';
     fb.textContent = CFG_SCHED_KEYS.has(key) ? 'Kaydedildi — zamanlayıcı yeniden planlandı.' : 'Kaydedildi.';
-    // Refresh the description line with updated audit info
-    loadSettings();
-    setTimeout(() => { fb.style.display = 'none'; }, 3500);
+    // Update audit line in place
+    const auditEl = document.querySelector(`#ci-${cid}`)?.closest('.cfg-item')?.querySelector('.cfg-audit');
+    if (auditEl && cfg.updatedAt) {
+      auditEl.innerHTML = `Son değişiklik: ${esc(cfg.updatedBy||'system')} &nbsp;·&nbsp; ${cfg.updatedAt.substring(0,16).replace('T',' ')}`;
+    }
+    setTimeout(() => { fb.textContent = ''; }, 4000);
   } catch(e) {
     fb.style.color = 'var(--red)';
     fb.textContent = 'Hata: ' + e.message;
