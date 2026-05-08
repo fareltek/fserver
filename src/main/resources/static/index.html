@@ -981,12 +981,17 @@ async function initApp() {
   document.getElementById('logout-btn').style.display = '';
   hideAuthOverlay();
   applyRoleUI(currentUser.role);
+  try {
+    const hi = await fetch('/health');
+    if (hi.ok) { const hj = await hi.json(); _serverIp = hj.serverIp || ''; }
+  } catch { /* non-critical */ }
   connect();
   await loadSectionFilters();
   refreshGlobalStats();
 }
 
 // ── GLOBALS ───────────────────────────────────────────────────────────────
+let _serverIp = '';
 const SEV_CSS  = {INFO:'b-info',DATA:'b-data',WARNING:'b-warning',ALARM:'b-alarm',CRITICAL:'b-critical',HEARTBEAT:'b-heartbeat'};
 const ROW_CSS  = {WARNING:'row-warning',ALARM:'row-alarm',CRITICAL:'row-critical',HEARTBEAT:'row-heartbeat'};
 
@@ -1122,7 +1127,7 @@ function addDbRow(e, addrMap) {
   const timeStr     = toLocalTime(e.eventTime, true);
   const isSys       = e.messageType === 'SYSTEM';
   const sectionName = isSys ? 'SERVER' : (addrMap[e.sourceAddr] || e.sourceAddr || '');
-  const addrDisplay = isSys ? window.location.hostname : (e.sourceAddr || '');
+  const addrDisplay = isSys ? _serverIp : (e.sourceAddr || '');
 
   appendRow({
     isLive:false, deviceType, deviceId, code, seqForGap: null,
@@ -1528,7 +1533,7 @@ function renderReportTable(data) {
     else if(sev==='WARNING') rowStyle='background:var(--yellow-bg)';
     const rptIsSys     = e.messageType === 'SYSTEM';
     const sectionName  = rptIsSys ? 'SERVER' : (reportAddrMap[e.sourceAddr] || e.sourceAddr || '—');
-    const rptAddr      = rptIsSys ? window.location.hostname : (e.sourceAddr || '—');
+    const rptAddr      = rptIsSys ? _serverIp : (e.sourceAddr || '—');
     return `<tr style="${rowStyle}">
       <td class="c-time">${esc(dt)}</td>
       <td class="c-name">${esc(sectionName)}</td>

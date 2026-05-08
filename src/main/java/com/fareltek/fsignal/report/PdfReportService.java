@@ -7,20 +7,16 @@ import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
-import java.net.InetAddress;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class PdfReportService {
 
-    private static final String SERVER_IP;
-    static {
-        String ip;
-        try { ip = InetAddress.getLocalHost().getHostAddress(); }
-        catch (Exception ignored) { ip = "SERVER"; }
-        SERVER_IP = ip;
-    }
+    @Value("${fsignal.server.ip:SERVER}")
+    private String serverIp;
 
     private static final Color COL_DARK_BLUE  = new Color(15, 43, 84);
     private static final Color COL_MID_BLUE   = new Color(26, 82, 158);
@@ -262,7 +258,7 @@ public class PdfReportService {
             String dt      = e.getEventTime()   != null ? e.getEventTime().format(DT_FMT)   : "—";
             boolean isSys  = "SYSTEM".equals(e.getMessageType());
             String bolgAdi = isSys ? "SERVER" : "—";
-            String bolgIp  = isSys ? SERVER_IP : (e.getSourceAddr() != null ? e.getSourceAddr() : "—");
+            String bolgIp  = isSys ? serverIp : (e.getSourceAddr() != null ? e.getSourceAddr() : "—");
             String desc    = e.getDescription()  != null
                     ? (e.getDescription().length() > 50 ? e.getDescription().substring(0, 50) + "…" : e.getDescription())
                     : "—";

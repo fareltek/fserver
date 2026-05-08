@@ -21,6 +21,8 @@ fsignal:
     path: ${ARCHIVE_PATH:./fsignal}
   log:
     path: ${LOG_PATH:./fsignal/logs}
+  server:
+    ip: ${SERVER_IP:}
   retention:
     days: ${RETENTION_DAYS:730}
   ntp:

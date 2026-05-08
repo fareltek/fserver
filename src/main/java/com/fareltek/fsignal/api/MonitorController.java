@@ -7,6 +7,7 @@ import com.fareltek.fsignal.tcp.TcpConnectionHandler;
 import com.fareltek.fsignal.tcp.TcpDataEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -30,6 +31,9 @@ public class MonitorController {
 
     private static final Logger log = LoggerFactory.getLogger(MonitorController.class);
 
+    @Value("${fsignal.server.ip:}")
+    private String serverIp;
+
     private final TcpConnectionHandler handler;
     private final SafetyEventService   safetyEventService;
     private final PdfReportService     pdfReportService;
@@ -44,8 +48,12 @@ public class MonitorController {
 
     @GetMapping("/health")
     public Map<String, Object> health() {
-        return Map.of("status", "UP", "service", "FSignal Server",
-                      "timestamp", LocalDateTime.now().toString());
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("status",    "UP");
+        m.put("service",   "FSignal Server");
+        m.put("timestamp", LocalDateTime.now().toString());
+        if (serverIp != null && !serverIp.isBlank()) m.put("serverIp", serverIp);
+        return m;
     }
 
     @GetMapping("/api/stats")

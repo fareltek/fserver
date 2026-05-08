@@ -16,6 +16,7 @@ services:
       - DB_PASS=2580
       - ARCHIVE_PATH=/archive
       - LOG_PATH=/archive/logs
+      - SERVER_IP=192.168.55.XX
       - RETENTION_DAYS=730
       - NTP_SERVER=pool.ntp.org
       - NTP_TIMEOUT_MS=4000
