@@ -362,6 +362,18 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   tbody tr.row-warning  { background:#fffbea!important; }
 }
 
+/* ── RESTART OVERLAY ─────────────────────────────────────────────────────── */
+#restart-overlay { position:fixed; inset:0; z-index:1100; background:rgba(0,0,0,.75);
+                   display:flex; align-items:center; justify-content:center; }
+#restart-overlay.hidden { display:none; }
+.restart-box { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+               padding:36px 44px; text-align:center; min-width:320px; }
+.restart-spinner { font-size:32px; display:block; margin-bottom:16px; animation:spin 1.2s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.restart-title { font-size:14px; font-weight:700; color:var(--text); margin-bottom:8px; }
+.restart-sub   { font-size:11px; color:var(--muted); }
+.restart-ok    { font-size:32px; display:block; margin-bottom:16px; }
+
 /* ── AUTH OVERLAY ────────────────────────────────────────────────────────── */
 #auth-overlay { position:fixed; inset:0; z-index:1000; background:var(--bg);
                 display:flex; align-items:center; justify-content:center;
@@ -496,6 +508,15 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
 </style>
 </head>
 <body>
+
+<!-- ══════════════════════════ RESTART OVERLAY ══════════════════════════════ -->
+<div id="restart-overlay" class="hidden">
+  <div class="restart-box">
+    <span id="restart-icon" class="restart-spinner">↺</span>
+    <div class="restart-title" id="restart-title">Sunucu yeniden başlatılıyor...</div>
+    <div class="restart-sub"  id="restart-sub">Lütfen bekleyin</div>
+  </div>
+</div>
 
 <!-- ══════════════════════════ AUTH OVERLAY ═════════════════════════════════ -->
 <div id="auth-overlay">
@@ -818,6 +839,7 @@ tbody tr.row-seq-gap { outline:2px dashed var(--orange); outline-offset:-1px; }
   <div class="sec-toolbar">
     <span class="sec-toolbar-title">Sistem Ayarları</span>
     <button class="btn" onclick="loadSettings()">↻ Yenile</button>
+    <button class="btn" id="btn-restart" onclick="doRestart()" style="color:var(--yellow);border-color:var(--yellow);margin-left:auto">↺ Sunucuyu Yeniden Başlat</button>
   </div>
   <div class="cfg-scroll" id="cfg-body">
     <div class="rpt-loading"><span class="spinner">⏳</span> Yükleniyor...</div>
@@ -2248,6 +2270,50 @@ function renderSettings(configs) {
 function updateMsHint(cid, val) {
   const el = document.getElementById('msh-' + cid);
   if (el) el.textContent = msToHuman(val);
+}
+
+async function doRestart() {
+  if (!confirm('Sunucu yeniden başlatılacak.\nTüm TCP bağlantıları ve SSE akışları kısa süreliğine kesilir.\n\nDevam edilsin mi?')) return;
+  const overlay = document.getElementById('restart-overlay');
+  const icon    = document.getElementById('restart-icon');
+  const title   = document.getElementById('restart-title');
+  const sub     = document.getElementById('restart-sub');
+  overlay.classList.remove('hidden');
+  icon.className  = 'restart-spinner';
+  icon.textContent = '↺';
+  title.textContent = 'Sunucu yeniden başlatılıyor...';
+  sub.textContent   = 'Lütfen bekleyin';
+  document.getElementById('btn-restart').disabled = true;
+
+  try { await authFetch('/api/admin/restart', { method: 'POST' }); } catch(e) { /* beklenen */ }
+
+  // Poll /health until server is back
+  let attempts = 0;
+  const poll = setInterval(async () => {
+    attempts++;
+    sub.textContent = 'Sunucu bekleniyor... (' + attempts + 's)';
+    try {
+      const r = await fetch('/health');
+      if (r.ok) {
+        clearInterval(poll);
+        icon.className   = 'restart-ok';
+        icon.textContent = '✓';
+        title.textContent = 'Sunucu hazır!';
+        sub.textContent   = 'Sayfa yenileniyor...';
+        setTimeout(() => location.reload(), 1200);
+      }
+    } catch(e) { /* henüz hazır değil */ }
+  }, 1000);
+
+  // Timeout after 60s
+  setTimeout(() => {
+    clearInterval(poll);
+    icon.className   = 'restart-ok';
+    icon.textContent = '⚠';
+    title.textContent = 'Zaman aşımı';
+    sub.textContent   = 'Sunucu 60 saniyede yanıt vermedi. Sayfayı manuel yenileyin.';
+    document.getElementById('btn-restart').disabled = false;
+  }, 60000);
 }
 
 async function saveConfig(key) {
