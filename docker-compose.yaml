@@ -22,6 +22,12 @@ services:
       - NTP_WARN_MS=1000
       - JWT_SECRET=ZnNpZ25hbC1kZXYtc2VjcmV0LWtleS1mb3ItbG9jYWwtZGV2ZWxvcG1lbnQtb25seQ==
       - TZ=Europe/Istanbul
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     volumes:
       - fsignal-archive:/archive
     networks:
